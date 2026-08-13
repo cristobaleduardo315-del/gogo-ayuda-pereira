@@ -31,6 +31,8 @@
     --yellow:#e0c341;
     --blue:#4d9de5;
     --green:#3fbf6a;
+    --cocina:#d97706;
+    --comida:#2f6fed;
     --radius:10px;
   }
   *{box-sizing:border-box;}
@@ -242,8 +244,8 @@
         <div class="chip" data-filter="status" data-value="pendiente">Pendientes</div>
         <div class="chip" data-filter="status" data-value="en_atencion">En atención</div>
         <div class="chip" data-filter="status" data-value="resuelto">Resueltos</div>
-        <div class="chip" data-filter="categoria" data-value="cocina" id="chip-cocinas">Cocinas</div>
-        <div class="chip" data-filter="categoria" data-value="punto_comida" id="chip-comida">Comida</div>
+        <div class="chip" data-filter="categoria" data-value="cocina" id="chip-cocinas"><span class="dot" style="background:var(--cocina)"></span> Cocinas</div>
+        <div class="chip" data-filter="categoria" data-value="punto_comida" id="chip-comida"><span class="dot" style="background:var(--comida)"></span> Comida</div>
       </div>
       <div id="report-list"></div>
     </aside>
@@ -538,10 +540,29 @@ function foodInfoLine(r){
   return '';
 }
 
-function makeIcon(color, isCircle){
+/* Glyphs blancos dibujados dentro del círculo de color, para distinguir
+   cocinas (cuchara) de puntos que necesitan comida (signo de exclamación)
+   a simple vista, sin depender del color de urgencia/estado. */
+function glyphFor(categoria){
+  if(categoria === 'cocina'){
+    // cuchara: óvalo (cuenco) + mango
+    return `<ellipse cx="13" cy="8.3" rx="3.1" ry="4.1" fill="#ffffff"/>
+      <rect x="11.9" y="11.6" width="2.2" height="8.6" rx="1.1" fill="#ffffff"/>`;
+  }
+  if(categoria === 'punto_comida'){
+    // signo de exclamación
+    return `<rect x="11.7" y="6" width="2.6" height="9.2" rx="1.3" fill="#ffffff"/>
+      <circle cx="13" cy="18.2" r="1.7" fill="#ffffff"/>`;
+  }
+  return '';
+}
+
+function makeIcon(color, isCircle, categoria){
   if(isCircle){
+    const glyph = glyphFor(categoria);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">
       <circle cx="13" cy="13" r="11" fill="${color}" stroke="#1a1a1a" stroke-width="2"/>
+      ${glyph}
     </svg>`;
     return {
       url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
@@ -561,20 +582,28 @@ function makeIcon(color, isCircle){
 function isCircleMarker(categoria){
   return categoria === 'cocina' || categoria === 'punto_comida';
 }
+/* Color fijo por categoría para cocinas y puntos de comida (para distinguirlas
+   entre sí de un vistazo); las demás categorías siguen coloreándose por
+   urgencia/estado como antes. */
+function markerColor(report){
+  if(report.categoria === 'cocina') return getComputedStyle(document.documentElement).getPropertyValue('--cocina').trim();
+  if(report.categoria === 'punto_comida') return getComputedStyle(document.documentElement).getPropertyValue('--comida').trim();
+  return colorFor(report);
+}
 
 /* ---------------- Render de marcador + tarjeta ---------------- */
 function upsertMarker(id, report){
   reportsById[id] = report;
-  const color = colorFor(report);
+  const color = markerColor(report);
   const isCircle = isCircleMarker(report.categoria);
   if(markers[id]){
     markers[id].setPosition({lat: report.lat, lng: report.lng});
-    markers[id].setIcon(makeIcon(color, isCircle));
+    markers[id].setIcon(makeIcon(color, isCircle, report.categoria));
   }else{
     const m = new google.maps.Marker({
       position: {lat: report.lat, lng: report.lng},
       map,
-      icon: makeIcon(color, isCircle)
+      icon: makeIcon(color, isCircle, report.categoria)
     });
     m.addListener('click', ()=>{
       infoWindow.setContent(markerPopups[id] || '');
@@ -639,7 +668,7 @@ function renderList(){
   }
 
   list.innerHTML = entries.map(([id, r])=>{
-    const color = colorFor(r);
+    const color = markerColor(r);
     const isFood = r.categoria === 'cocina' || r.categoria === 'punto_comida';
     return `<div class="report-card" style="border-left-color:${color}" onclick="focusReport('${id}')">
       <div class="top">
