@@ -1,0 +1,8 @@
+{
+    "name": "gogo-ayuda-pereira",
+    "compatibility_date": "2026-08-13",
+    "assets": {
+          "directory": "./",
+          "not_found_handling": "single-page-application"
+    }
+}
