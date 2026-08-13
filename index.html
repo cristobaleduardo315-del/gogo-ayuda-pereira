@@ -33,6 +33,13 @@
     --green:#3fbf6a;
     --cocina:#d97706;
     --comida:#2f6fed;
+    --hidratacion:#0891b2;
+    --medicina-humana:#dc2626;
+    --medicina-mascotas:#9333ea;
+    --alimentos-np:#65a30d;
+    --donacion-ropa:#db2777;
+    --donacion-bebes:#38bdf8;
+    --donacion-adulto:#57534e;
     --radius:10px;
   }
   *{box-sizing:border-box;}
@@ -86,6 +93,35 @@
   .dot.red{background:var(--red);} .dot.orange{background:var(--orange);}
   .dot.blue{background:var(--blue);} .dot.green{background:var(--green);}
 
+  /* ---------- Barra de tipos de ayuda ---------- */
+  #tipo-tabs{
+    display:flex;gap:6px;padding:8px 16px;background:var(--panel);
+    border-bottom:1px solid var(--border);overflow-x:auto;
+  }
+  .tipo-tab{
+    padding:6px 14px;border-radius:20px;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text-dim);font-size:12px;font-weight:600;
+    cursor:pointer;white-space:nowrap;flex:none;display:flex;align-items:center;gap:6px;
+  }
+  .tipo-tab.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent);}
+  .tab-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none;}
+
+  /* ---------- Botones de acción: WhatsApp / Cómo llegar ---------- */
+  .report-actions{display:flex;gap:6px;margin-top:8px;}
+  .report-actions a{
+    flex:1;text-align:center;padding:6px 8px;border-radius:6px;font-size:11px;font-weight:600;
+    text-decoration:none;border:1px solid var(--border);
+  }
+  .report-actions a.wa{background:#25d366;color:#ffffff;border-color:#25d366;}
+  .report-actions a.maps{background:var(--panel-2);color:var(--text);}
+  .popup-actions{display:flex;gap:6px;margin-top:8px;}
+  .popup-actions a{
+    flex:1;text-align:center;padding:5px 6px;border-radius:6px;font-size:11px;font-weight:600;
+    text-decoration:none;border:1px solid var(--border);
+  }
+  .popup-actions a.wa{background:#25d366;color:#ffffff;border-color:#25d366;}
+  .popup-actions a.maps{background:var(--panel-2);color:var(--text);}
+
   #search-box{display:flex;gap:6px;align-items:center;}
   #search-box input{
     padding:8px 10px;border-radius:8px;border:1px solid var(--border);
@@ -113,6 +149,8 @@
     background:var(--panel-2);color:var(--text-dim);font-size:11px;cursor:pointer;user-select:none;
   }
   .chip.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600;}
+  #categoria-chips{display:none;}
+  #categoria-chips.show{display:contents;}
 
   #report-list{flex:1;overflow-y:auto;padding:8px;}
   .report-card{
@@ -243,10 +281,22 @@
       <div class="stat"><span class="dot red"></span> <span id="count-pendiente">0</span> pendientes</div>
       <div class="stat"><span class="dot blue"></span> <span id="count-atencion">0</span> en atención</div>
       <div class="stat"><span class="dot green"></span> <span id="count-resuelto">0</span> resueltos</div>
-      <div class="stat"><span id="count-platos-faltan">0</span> platos por cubrir</div>
-      <div class="stat"><span id="count-cocinas">0</span> cocinas activas</div>
+      <div class="stat" id="stat-unidad-faltan" style="display:none;"><span id="count-unidad-faltan">0</span> <span id="label-unidad-faltan">platos por cubrir</span></div>
+      <div class="stat" id="stat-provee-activos" style="display:none;"><span id="count-provee-activos">0</span> <span id="label-provee-activos">cocinas activas</span></div>
     </div>
   </header>
+
+  <nav id="tipo-tabs">
+    <button class="tipo-tab active" data-tipo="general" onclick="selectTipoTab('general')">Panorama general</button>
+    <button class="tipo-tab" data-tipo="alimentacion" onclick="selectTipoTab('alimentacion')"><span class="tab-dot" style="background:var(--cocina)"></span>Alimentación</button>
+    <button class="tipo-tab" data-tipo="hidratacion" onclick="selectTipoTab('hidratacion')"><span class="tab-dot" style="background:var(--hidratacion)"></span>Hidratación</button>
+    <button class="tipo-tab" data-tipo="medicina_humana" onclick="selectTipoTab('medicina_humana')"><span class="tab-dot" style="background:var(--medicina-humana)"></span>Medicina humana</button>
+    <button class="tipo-tab" data-tipo="medicina_mascotas" onclick="selectTipoTab('medicina_mascotas')"><span class="tab-dot" style="background:var(--medicina-mascotas)"></span>Medicina mascotas</button>
+    <button class="tipo-tab" data-tipo="alimentos_np" onclick="selectTipoTab('alimentos_np')"><span class="tab-dot" style="background:var(--alimentos-np)"></span>Alimentos (no preparados)</button>
+    <button class="tipo-tab" data-tipo="donacion_ropa" onclick="selectTipoTab('donacion_ropa')"><span class="tab-dot" style="background:var(--donacion-ropa)"></span>Donaciones ropa</button>
+    <button class="tipo-tab" data-tipo="donacion_bebes" onclick="selectTipoTab('donacion_bebes')"><span class="tab-dot" style="background:var(--donacion-bebes)"></span>Donaciones bebés</button>
+    <button class="tipo-tab" data-tipo="donacion_adulto" onclick="selectTipoTab('donacion_adulto')"><span class="tab-dot" style="background:var(--donacion-adulto)"></span>Donaciones adulto mayor</button>
+  </nav>
 
   <main>
     <div id="map"></div>
@@ -256,8 +306,7 @@
         <div class="chip" data-filter="status" data-value="pendiente">Pendientes</div>
         <div class="chip" data-filter="status" data-value="en_atencion">En atención</div>
         <div class="chip" data-filter="status" data-value="resuelto">Resueltos</div>
-        <div class="chip" data-filter="categoria" data-value="cocina" id="chip-cocinas"><span class="dot" style="background:var(--cocina)"></span> Cocinas</div>
-        <div class="chip" data-filter="categoria" data-value="punto_comida" id="chip-comida"><span class="dot" style="background:var(--comida)"></span> Comida</div>
+        <div id="categoria-chips"></div>
       </div>
       <div id="report-list"></div>
     </aside>
@@ -275,10 +324,7 @@
 
     <div class="field">
       <label>Categoría de necesidad</label>
-      <select id="f-categoria">
-        <option value="cocina">Cocina / Centro de preparación</option>
-        <option value="punto_comida">Punto que necesita comida</option>
-      </select>
+      <select id="f-categoria"></select>
     </div>
 
     <div class="row2">
@@ -297,30 +343,30 @@
     </div>
 
     <div class="field food-fields" id="food-cocina-fields" style="display:none;">
-      <label>Capacidad de la cocina</label>
+      <label id="lbl-capacidad-tipo">Capacidad</label>
       <select id="f-capacidad-tipo">
-        <option value="cantidad">Cantidad específica de platos</option>
+        <option value="cantidad" id="opt-capacidad-cantidad">Cantidad específica</option>
         <option value="total">Puede cubrir la necesidad total de una zona</option>
       </select>
     </div>
     <div class="field food-fields" id="food-cocina-cantidad-field" style="display:none;">
-      <label>¿Cuántos platos puede preparar?</label>
+      <label id="lbl-platos-capacidad">¿Cuánto puede proveer?</label>
       <input id="f-platos-capacidad" type="number" min="0" placeholder="Ej: 150" />
     </div>
 
     <div class="row2 food-fields" id="food-punto-fields" style="display:none;">
       <div class="field">
-        <label>Platos necesarios</label>
+        <label id="lbl-platos-necesarios">Cantidad necesaria</label>
         <input id="f-platos-necesarios" type="number" min="0" placeholder="Ej: 100" />
       </div>
       <div class="field">
-        <label>Platos ya cubiertos</label>
+        <label id="lbl-platos-cubiertos">Cantidad ya cubierta</label>
         <input id="f-platos-cubiertos" type="number" min="0" placeholder="Ej: 0" />
       </div>
     </div>
     <div class="field food-fields" id="food-punto-atendido-field" style="display:none;">
-      <label>Cocina que la está atendiendo (opcional)</label>
-      <input id="f-atendido-por" type="text" placeholder="Ej: Cocina Comunitaria La Esneda" />
+      <label>¿Quién está atendiendo? (opcional)</label>
+      <input id="f-atendido-por" type="text" placeholder="Ej: nombre del punto o persona" />
     </div>
 
     <div class="field">
@@ -473,6 +519,7 @@ let currentFilterStatus = 'all';
 let editingId = null;
 let localReports = [];   // usado si Firebase no está configurado
 let localIdCounter = 1;
+let currentTipoTab = 'general';   // tipo de ayuda activo en la barra de pestañas ('general' = todos)
 
 map.addListener('click', (e)=>{
   if(pinPlacementMode){
@@ -560,61 +607,139 @@ function pickLocationOnMap(){
   document.getElementById('pin-hint').style.display = 'block';
 }
 
-/* ---------------- Colores por estado/urgencia ---------------- */
+/* ---------------- Tipos de ayuda (secciones independientes) ----------------
+   Cada tipo define su par "provee" (quién ofrece/tiene capacidad) / "necesita"
+   (quién necesita), siguiendo el mismo principio que ya existía para
+   Alimentación (Cocina / Punto que necesita comida), ahora generalizado a
+   8 tipos independientes + un "Panorama general" que los muestra todos juntos. */
+const TIPOS_AYUDA = [
+  { key:'alimentacion', label:'Alimentación', unidad:'platos',
+    catProvee:'cocina', catNecesita:'punto_comida',
+    labelProvee:'Cocina / Centro de preparación', labelNecesita:'Punto que necesita comida',
+    chipProvee:'Cocinas', chipNecesita:'Comida',
+    colorProvee:'--cocina', colorNecesita:'--comida',
+    statProveeLabel:'cocinas activas' },
+  { key:'hidratacion', label:'Hidratación', unidad:'litros',
+    catProvee:'hidratacion_provee', catNecesita:'hidratacion_necesita',
+    labelProvee:'Punto de hidratación disponible', labelNecesita:'Punto que necesita agua',
+    chipProvee:'Puntos de agua', chipNecesita:'Necesita agua',
+    colorProvee:'--hidratacion', colorNecesita:'--hidratacion',
+    statProveeLabel:'puntos de hidratación activos' },
+  { key:'medicina_humana', label:'Medicina humana', unidad:'kits',
+    catProvee:'medicina_humana_provee', catNecesita:'medicina_humana_necesita',
+    labelProvee:'Punto médico / Botiquín disponible', labelNecesita:'Punto que necesita medicina',
+    chipProvee:'Puntos médicos', chipNecesita:'Necesita medicina',
+    colorProvee:'--medicina-humana', colorNecesita:'--medicina-humana',
+    statProveeLabel:'puntos médicos activos' },
+  { key:'medicina_mascotas', label:'Medicina para mascotas', unidad:'kits',
+    catProvee:'medicina_mascotas_provee', catNecesita:'medicina_mascotas_necesita',
+    labelProvee:'Punto veterinario disponible', labelNecesita:'Punto que necesita medicina para mascotas',
+    chipProvee:'Veterinarios', chipNecesita:'Necesita mascotas',
+    colorProvee:'--medicina-mascotas', colorNecesita:'--medicina-mascotas',
+    statProveeLabel:'puntos veterinarios activos' },
+  { key:'alimentos_np', label:'Alimentos (no preparados)', unidad:'mercados',
+    catProvee:'alimentos_np_provee', catNecesita:'alimentos_np_necesita',
+    labelProvee:'Punto de alimentos disponible', labelNecesita:'Punto que necesita alimentos',
+    chipProvee:'Puntos de alimentos', chipNecesita:'Necesita alimentos',
+    colorProvee:'--alimentos-np', colorNecesita:'--alimentos-np',
+    statProveeLabel:'puntos de alimentos activos' },
+  { key:'donacion_ropa', label:'Donaciones ropa', unidad:'prendas',
+    catProvee:'donacion_ropa_provee', catNecesita:'donacion_ropa_necesita',
+    labelProvee:'Punto de donación de ropa disponible', labelNecesita:'Punto que necesita ropa',
+    chipProvee:'Dan ropa', chipNecesita:'Necesita ropa',
+    colorProvee:'--donacion-ropa', colorNecesita:'--donacion-ropa',
+    statProveeLabel:'puntos de donación de ropa activos' },
+  { key:'donacion_bebes', label:'Donaciones bebés', unidad:'paquetes',
+    catProvee:'donacion_bebes_provee', catNecesita:'donacion_bebes_necesita',
+    labelProvee:'Punto de donación para bebés disponible', labelNecesita:'Punto que necesita artículos para bebés',
+    chipProvee:'Dan para bebés', chipNecesita:'Necesita bebés',
+    colorProvee:'--donacion-bebes', colorNecesita:'--donacion-bebes',
+    statProveeLabel:'puntos de donación para bebés activos' },
+  { key:'donacion_adulto', label:'Donaciones adulto mayor', unidad:'paquetes',
+    catProvee:'donacion_adulto_provee', catNecesita:'donacion_adulto_necesita',
+    labelProvee:'Punto de donación para adulto mayor disponible', labelNecesita:'Punto que necesita artículos para adulto mayor',
+    chipProvee:'Dan adulto mayor', chipNecesita:'Necesita adulto mayor',
+    colorProvee:'--donacion-adulto', colorNecesita:'--donacion-adulto',
+    statProveeLabel:'puntos de donación para adulto mayor activos' }
+];
+
+/* Dado un valor de categoria, devuelve {tipo, role} o null si es una
+   categoría "libre" antigua (rescate, medico, etc.) que ya no se ofrece
+   como opción seleccionable pero se mantiene por robustez. */
+function categoriaInfo(cat){
+  for(const t of TIPOS_AYUDA){
+    if(t.catProvee === cat) return {tipo:t, role:'provee'};
+    if(t.catNecesita === cat) return {tipo:t, role:'necesita'};
+  }
+  return null;
+}
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ---------------- Colores por estado/urgencia (categorías libres antiguas) ---------------- */
 function colorFor(report){
-  if(report.estado === 'resuelto') return getComputedStyle(document.documentElement).getPropertyValue('--green').trim();
-  if(report.estado === 'en_atencion') return getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
-  if(report.urgencia === 'alta') return getComputedStyle(document.documentElement).getPropertyValue('--red').trim();
-  if(report.urgencia === 'media') return getComputedStyle(document.documentElement).getPropertyValue('--orange').trim();
-  return getComputedStyle(document.documentElement).getPropertyValue('--yellow').trim();
+  if(report.estado === 'resuelto') return cssVar('--green');
+  if(report.estado === 'en_atencion') return cssVar('--blue');
+  if(report.urgencia === 'alta') return cssVar('--red');
+  if(report.urgencia === 'media') return cssVar('--orange');
+  return cssVar('--yellow');
 }
 
 function catLabel(cat){
-  const map = {
+  const legacy = {
     rescate:'Rescate / personas atrapadas', medico:'Atención médica',
     agua:'Agua potable', alimentos:'Alimentos', refugio:'Refugio / albergue',
-    riesgo:'Riesgo estructural', desaparecido:'Persona desaparecida', otro:'Otro',
-    cocina:'Cocina / Centro de preparación', punto_comida:'Punto que necesita comida'
+    riesgo:'Riesgo estructural', desaparecido:'Persona desaparecida', otro:'Otro'
   };
-  return map[cat] || cat;
+  if(legacy[cat]) return legacy[cat];
+  const info = categoriaInfo(cat);
+  if(info) return info.role === 'provee' ? info.tipo.labelProvee : info.tipo.labelNecesita;
+  return cat;
 }
 function estadoLabel(e, categoria){
-  if(categoria === 'punto_comida'){
+  const info = categoriaInfo(categoria);
+  if(info && info.role === 'necesita'){
     return e === 'pendiente' ? 'Sin atender' : e === 'en_atencion' ? 'En proceso' : 'Atendida';
   }
-  if(categoria === 'cocina'){
+  if(info && info.role === 'provee'){
     return e === 'pendiente' ? 'Disponible' : e === 'en_atencion' ? 'Capacidad limitada' : 'Sin capacidad disponible';
   }
   return e === 'pendiente' ? 'Pendiente' : e === 'en_atencion' ? 'En atención' : 'Resuelto';
 }
 function foodInfoLine(r){
-  if(r.categoria === 'cocina'){
-    const cap = r.capacidadTipo === 'total' ? 'Cubre la necesidad total de una zona' : `${r.platosCapacidad||0} platos`;
+  const info = categoriaInfo(r.categoria);
+  if(!info) return '';
+  const u = info.tipo.unidad;
+  if(info.role === 'provee'){
+    const cap = r.capacidadTipo === 'total' ? 'Cubre la necesidad total de una zona' : `${r.platosCapacidad||0} ${u}`;
     return `<div class="meta"><span>Capacidad: ${cap}</span></div>`;
   }
-  if(r.categoria === 'punto_comida'){
-    const nec = r.platosNecesarios||0, cub = r.platosCubiertos||0;
-    const atendido = r.atendidoPor ? ` · Atendido por: ${r.atendidoPor}` : '';
-    return `<div class="meta"><span>Necesita: ${nec} platos · Cubierto: ${cub}${atendido}</span></div>`;
-  }
-  return '';
+  const nec = r.platosNecesarios||0, cub = r.platosCubiertos||0;
+  const atendido = r.atendidoPor ? ` · Atendido por: ${r.atendidoPor}` : '';
+  return `<div class="meta"><span>Necesita: ${nec} ${u} · Cubierto: ${cub} ${u}${atendido}</span></div>`;
 }
 
-/* Glyphs blancos dibujados dentro del círculo de color, para distinguir
-   cocinas (cuchara) de puntos que necesitan comida (signo de exclamación)
-   a simple vista, sin depender del color de urgencia/estado. */
+/* Glyphs blancos dibujados dentro del círculo de color. La cocina/comida
+   (Alimentación) mantiene sus glifos originales (cuchara / exclamación).
+   Los 7 tipos nuevos usan un glifo genérico por rol: "+" para quien
+   ofrece/tiene capacidad, "!" (el mismo de siempre) para quien necesita.
+   La distinción entre tipos la da el color fijo del círculo, no el glifo. */
 function glyphFor(categoria){
   if(categoria === 'cocina'){
     // cuchara: óvalo (cuenco) + mango
     return `<ellipse cx="13" cy="8.3" rx="3.1" ry="4.1" fill="#ffffff"/>
       <rect x="11.9" y="11.6" width="2.2" height="8.6" rx="1.1" fill="#ffffff"/>`;
   }
-  if(categoria === 'punto_comida'){
-    // signo de exclamación
-    return `<rect x="11.7" y="6" width="2.6" height="9.2" rx="1.3" fill="#ffffff"/>
+  const EXCLAMACION = `<rect x="11.7" y="6" width="2.6" height="9.2" rx="1.3" fill="#ffffff"/>
       <circle cx="13" cy="18.2" r="1.7" fill="#ffffff"/>`;
-  }
-  return '';
+  if(categoria === 'punto_comida') return EXCLAMACION;
+  const info = categoriaInfo(categoria);
+  if(!info) return '';
+  if(info.role === 'necesita') return EXCLAMACION;
+  // "+" genérico para quien ofrece/tiene capacidad
+  return `<rect x="11.3" y="6.5" width="3.4" height="13" rx="1" fill="#ffffff"/>
+    <rect x="6.5" y="11.3" width="13" height="3.4" rx="1" fill="#ffffff"/>`;
 }
 
 function makeIcon(color, isCircle, categoria){
@@ -640,15 +765,34 @@ function makeIcon(color, isCircle, categoria){
   };
 }
 function isCircleMarker(categoria){
-  return categoria === 'cocina' || categoria === 'punto_comida';
+  return !!categoriaInfo(categoria);
 }
-/* Color fijo por categoría para cocinas y puntos de comida (para distinguirlas
-   entre sí de un vistazo); las demás categorías siguen coloreándose por
+/* Color fijo por categoría (para distinguir tipos/roles entre sí de un
+   vistazo); las categorías libres antiguas siguen coloreándose por
    urgencia/estado como antes. */
 function markerColor(report){
-  if(report.categoria === 'cocina') return getComputedStyle(document.documentElement).getPropertyValue('--cocina').trim();
-  if(report.categoria === 'punto_comida') return getComputedStyle(document.documentElement).getPropertyValue('--comida').trim();
+  const info = categoriaInfo(report.categoria);
+  if(info) return cssVar(info.role === 'provee' ? info.tipo.colorProvee : info.tipo.colorNecesita);
   return colorFor(report);
+}
+
+/* ---------------- Enlaces de acción: WhatsApp / Cómo llegar ---------------- */
+function whatsappLink(phone){
+  const digits = (phone||'').replace(/[^\d]/g,'');
+  if(!digits) return null;
+  const withCountry = digits.length <= 10 ? ('57' + digits) : digits;
+  return `https://wa.me/${withCountry}`;
+}
+function mapsDirectionsLink(lat, lng){
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+}
+function actionButtonsHtml(report, cssClass){
+  const wa = whatsappLink(report.contacto);
+  const maps = mapsDirectionsLink(report.lat, report.lng);
+  return `<div class="${cssClass}" onclick="event.stopPropagation()">
+    ${wa ? `<a class="wa" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+    <a class="maps" href="${maps}" target="_blank" rel="noopener">Cómo llegar</a>
+  </div>`;
 }
 
 /* ---------------- Render de marcador + tarjeta ---------------- */
@@ -672,8 +816,10 @@ function upsertMarker(id, report){
     });
     markers[id] = m;
   }
-  const foodExtra = report.categoria==='cocina' || report.categoria==='punto_comida' ? foodInfoLine(report).replace('<div class="meta"><span>','<br>').replace('</span></div>','') : '';
-  markerPopups[id] = `<div class="map-popup"><b>${catLabel(report.categoria)}</b><br>${report.direccion || ''}<br><i>${estadoLabel(report.estado, report.categoria)}</i>${foodExtra}</div>`;
+  const hasCapacityInfo = !!categoriaInfo(report.categoria);
+  const foodExtra = hasCapacityInfo ? foodInfoLine(report).replace('<div class="meta"><span>','<br>').replace('</span></div>','') : '';
+  markerPopups[id] = `<div class="map-popup"><b>${catLabel(report.categoria)}</b><br>${report.direccion || ''}<br><i>${estadoLabel(report.estado, report.categoria)}</i>${foodExtra}${actionButtonsHtml(report, 'popup-actions')}</div>`;
+  applyMarkerVisibility();
   renderList();
   updateStats();
 }
@@ -686,23 +832,53 @@ function removeMarker(id){
   updateStats();
 }
 
-function updateStats(){
-  const vals = Object.values(reportsById);
-  document.getElementById('count-pendiente').textContent = vals.filter(r=>r.estado==='pendiente').length;
-  document.getElementById('count-atencion').textContent = vals.filter(r=>r.estado==='en_atencion').length;
-  document.getElementById('count-resuelto').textContent = vals.filter(r=>r.estado==='resuelto').length;
+/* Muestra en el mapa solo los marcadores del tipo de ayuda activo en la
+   barra de pestañas; en "Panorama general" (currentTipoTab === 'general')
+   se muestran todos. */
+function applyMarkerVisibility(){
+  Object.entries(markers).forEach(([id, m])=>{
+    const r = reportsById[id];
+    if(!r) return;
+    const info = categoriaInfo(r.categoria);
+    const visible = currentTipoTab === 'general' || (info && info.tipo.key === currentTipoTab);
+    m.setVisible(visible);
+  });
+}
 
-  let platosFaltan = 0, cocinasActivas = 0;
-  vals.forEach(r=>{
-    if(r.categoria === 'punto_comida' && r.estado !== 'resuelto'){
-      platosFaltan += Math.max((r.platosNecesarios||0) - (r.platosCubiertos||0), 0);
+function updateStats(){
+  const allVals = Object.values(reportsById);
+  const scoped = currentTipoTab === 'general'
+    ? allVals
+    : allVals.filter(r => { const info = categoriaInfo(r.categoria); return info && info.tipo.key === currentTipoTab; });
+
+  document.getElementById('count-pendiente').textContent = scoped.filter(r=>r.estado==='pendiente').length;
+  document.getElementById('count-atencion').textContent = scoped.filter(r=>r.estado==='en_atencion').length;
+  document.getElementById('count-resuelto').textContent = scoped.filter(r=>r.estado==='resuelto').length;
+
+  const statUnidad = document.getElementById('stat-unidad-faltan');
+  const statProvee = document.getElementById('stat-provee-activos');
+  if(currentTipoTab === 'general'){
+    statUnidad.style.display = 'none';
+    statProvee.style.display = 'none';
+    return;
+  }
+  const tipo = TIPOS_AYUDA.find(t=>t.key===currentTipoTab);
+  if(!tipo){ statUnidad.style.display = 'none'; statProvee.style.display = 'none'; return; }
+  statUnidad.style.display = 'flex';
+  statProvee.style.display = 'flex';
+  let faltan = 0, activos = 0;
+  scoped.forEach(r=>{
+    if(r.categoria === tipo.catNecesita && r.estado !== 'resuelto'){
+      faltan += Math.max((r.platosNecesarios||0) - (r.platosCubiertos||0), 0);
     }
-    if(r.categoria === 'cocina' && r.estado !== 'resuelto'){
-      cocinasActivas++;
+    if(r.categoria === tipo.catProvee && r.estado !== 'resuelto'){
+      activos++;
     }
   });
-  document.getElementById('count-platos-faltan').textContent = platosFaltan;
-  document.getElementById('count-cocinas').textContent = cocinasActivas;
+  document.getElementById('count-unidad-faltan').textContent = faltan;
+  document.getElementById('label-unidad-faltan').textContent = `${tipo.unidad} por cubrir`;
+  document.getElementById('count-provee-activos').textContent = activos;
+  document.getElementById('label-provee-activos').textContent = tipo.statProveeLabel;
 }
 
 const urgencyRank = {alta:0, media:1, baja:2};
@@ -710,6 +886,9 @@ let currentFilterCategoria = 'all';
 function renderList(){
   const list = document.getElementById('report-list');
   let entries = Object.entries(reportsById);
+  if(currentTipoTab !== 'general'){
+    entries = entries.filter(([id,r]) => { const info = categoriaInfo(r.categoria); return info && info.tipo.key === currentTipoTab; });
+  }
   if(currentFilterStatus !== 'all'){
     entries = entries.filter(([id,r]) => r.estado === currentFilterStatus);
   }
@@ -729,18 +908,19 @@ function renderList(){
 
   list.innerHTML = entries.map(([id, r])=>{
     const color = markerColor(r);
-    const isFood = r.categoria === 'cocina' || r.categoria === 'punto_comida';
+    const hasCapacityInfo = !!categoriaInfo(r.categoria);
     return `<div class="report-card" style="border-left-color:${color}" onclick="focusReport('${id}')">
       <div class="top">
         <div class="cat">${catLabel(r.categoria)}</div>
         <div class="badge">${estadoLabel(r.estado, r.categoria)}</div>
       </div>
       <div class="desc">${(r.descripcion||'').slice(0,120)}${(r.descripcion||'').length>120?'…':''}</div>
-      ${isFood ? foodInfoLine(r) : ''}
+      ${hasCapacityInfo ? foodInfoLine(r) : ''}
       <div class="meta">
         <span>${(r.direccion||'Sin dirección').slice(0,30)}</span>
-        ${isFood ? '' : `<span>${r.urgencia==='alta'?'Alta':r.urgencia==='media'?'Media':'Baja'} · ${r.personas||0} pers.</span>`}
+        ${hasCapacityInfo ? '' : `<span>${r.urgencia==='alta'?'Alta':r.urgencia==='media'?'Media':'Baja'} · ${r.personas||0} pers.</span>`}
       </div>
+      ${actionButtonsHtml(r, 'report-actions')}
     </div>`;
   }).join('');
 }
@@ -757,33 +937,93 @@ function focusReport(id){
   openEditReportModal(id);
 }
 
-/* ---------------- Filtros ---------------- */
-document.querySelectorAll('.chip').forEach(chip=>{
-  chip.addEventListener('click', ()=>{
-    const filterType = chip.dataset.filter;
-    if(filterType === 'categoria'){
-      const alreadyActive = chip.classList.contains('active');
-      document.querySelectorAll('.chip[data-filter="categoria"]').forEach(c=>c.classList.remove('active'));
-      if(alreadyActive){
-        currentFilterCategoria = 'all';
-      }else{
-        chip.classList.add('active');
-        currentFilterCategoria = chip.dataset.value;
-      }
+/* ---------------- Filtros ----------------
+   Delegado desde #filters (en vez de listeners por chip individual) porque
+   los chips de categoría ahora se regeneran dinámicamente según el tipo de
+   ayuda activo (renderCategoriaChips), y un listener delegado sigue
+   funcionando aunque el DOM interno cambie. */
+document.getElementById('filters').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  const filterType = chip.dataset.filter;
+  if(filterType === 'categoria'){
+    const alreadyActive = chip.classList.contains('active');
+    document.querySelectorAll('.chip[data-filter="categoria"]').forEach(c=>c.classList.remove('active'));
+    if(alreadyActive){
+      currentFilterCategoria = 'all';
     }else{
-      document.querySelectorAll('.chip[data-filter="status"]').forEach(c=>c.classList.remove('active'));
       chip.classList.add('active');
-      currentFilterStatus = chip.dataset.value;
+      currentFilterCategoria = chip.dataset.value;
     }
-    renderList();
-  });
+  }else{
+    document.querySelectorAll('.chip[data-filter="status"]').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilterStatus = chip.dataset.value;
+  }
+  renderList();
 });
 
+/* Regenera los chips "provee"/"necesita" propios del tipo de ayuda activo
+   (ocultos por completo en "Panorama general", donde la separación por tipo
+   ya la da la barra de pestañas). */
+function renderCategoriaChips(){
+  const container = document.getElementById('categoria-chips');
+  const tipo = TIPOS_AYUDA.find(t=>t.key===currentTipoTab);
+  if(!tipo){
+    container.classList.remove('show');
+    container.innerHTML = '';
+    return;
+  }
+  container.classList.add('show');
+  container.innerHTML = `
+    <div class="chip" data-filter="categoria" data-value="${tipo.catProvee}"><span class="dot" style="background:${cssVar(tipo.colorProvee)}"></span> ${tipo.chipProvee}</div>
+    <div class="chip" data-filter="categoria" data-value="${tipo.catNecesita}"><span class="dot" style="background:${cssVar(tipo.colorNecesita)}"></span> ${tipo.chipNecesita}</div>
+  `;
+}
+
+/* ---------------- Barra de tipos de ayuda ---------------- */
+function selectTipoTab(tipoKey){
+  currentTipoTab = tipoKey;
+  document.querySelectorAll('.tipo-tab').forEach(t=>t.classList.toggle('active', t.dataset.tipo === tipoKey));
+  currentFilterCategoria = 'all';
+  renderCategoriaChips();
+  applyMarkerVisibility();
+  renderList();
+  updateStats();
+}
+
 /* ---------------- Modal: nuevo / editar ---------------- */
+function populateCategoriaSelect(opts){
+  opts = opts || {};
+  const sel = document.getElementById('f-categoria');
+  const full = opts.full || currentTipoTab === 'general';
+  sel.innerHTML = '';
+  if(full){
+    TIPOS_AYUDA.forEach(t=>{
+      const og = document.createElement('optgroup');
+      og.label = t.label;
+      const o1 = document.createElement('option');
+      o1.value = t.catProvee; o1.textContent = t.labelProvee;
+      const o2 = document.createElement('option');
+      o2.value = t.catNecesita; o2.textContent = t.labelNecesita;
+      og.appendChild(o1); og.appendChild(o2);
+      sel.appendChild(og);
+    });
+  }else{
+    const t = TIPOS_AYUDA.find(x=>x.key === currentTipoTab) || TIPOS_AYUDA[0];
+    const o1 = document.createElement('option');
+    o1.value = t.catProvee; o1.textContent = t.labelProvee;
+    const o2 = document.createElement('option');
+    o2.value = t.catNecesita; o2.textContent = t.labelNecesita;
+    sel.appendChild(o1); sel.appendChild(o2);
+  }
+}
+
 function openNewReportModal(){
   editingId = null;
   document.getElementById('modal-title').textContent = 'Nuevo reporte de zona';
   document.getElementById('btn-delete').style.display = 'none';
+  populateCategoriaSelect();
   clearForm();
   pendingLatLng = null;
   pinPlacementMode = false;
@@ -796,6 +1036,7 @@ function openEditReportModal(id){
   const r = reportsById[id];
   document.getElementById('modal-title').textContent = 'Editar reporte';
   document.getElementById('btn-delete').style.display = 'block';
+  populateCategoriaSelect({full:true});
   document.getElementById('f-categoria').value = r.categoria;
   document.getElementById('f-urgencia').value = r.urgencia;
   document.getElementById('f-personas').value = r.personas || '';
@@ -816,7 +1057,6 @@ function openEditReportModal(id){
 }
 
 function clearForm(){
-  document.getElementById('f-categoria').value = 'cocina';
   document.getElementById('f-urgencia').value = 'alta';
   document.getElementById('f-personas').value = '';
   document.getElementById('f-direccion').value = '';
@@ -833,12 +1073,23 @@ function clearForm(){
   updateFoodFieldsVisibility();
 }
 
-/* ---------------- Campos dinámicos: cocinas / puntos de comida ---------------- */
+/* ---------------- Campos dinámicos por tipo de ayuda ---------------- */
 function updateFoodFieldsVisibility(){
   const cat = document.getElementById('f-categoria').value;
-  document.getElementById('food-cocina-fields').style.display = cat === 'cocina' ? 'block' : 'none';
-  document.getElementById('food-punto-fields').style.display = cat === 'punto_comida' ? 'grid' : 'none';
-  document.getElementById('food-punto-atendido-field').style.display = cat === 'punto_comida' ? 'block' : 'none';
+  const info = categoriaInfo(cat);
+  const isProvee = !!info && info.role === 'provee';
+  const isNecesita = !!info && info.role === 'necesita';
+  document.getElementById('food-cocina-fields').style.display = isProvee ? 'block' : 'none';
+  document.getElementById('food-punto-fields').style.display = isNecesita ? 'grid' : 'none';
+  document.getElementById('food-punto-atendido-field').style.display = isNecesita ? 'block' : 'none';
+  if(info){
+    const u = info.tipo.unidad;
+    document.getElementById('lbl-capacidad-tipo').textContent = 'Capacidad';
+    document.getElementById('opt-capacidad-cantidad').textContent = `Cantidad específica (${u})`;
+    document.getElementById('lbl-platos-capacidad').textContent = `¿Cuántos ${u} puede proveer?`;
+    document.getElementById('lbl-platos-necesarios').textContent = `Cantidad necesaria (${u})`;
+    document.getElementById('lbl-platos-cubiertos').textContent = `Cantidad ya cubierta (${u})`;
+  }
   updateCapacidadTipoVisibility();
   updateEstadoLabels(cat);
 }
@@ -846,17 +1097,20 @@ function updateFoodFieldsVisibility(){
 function updateCapacidadTipoVisibility(){
   const cat = document.getElementById('f-categoria').value;
   const tipo = document.getElementById('f-capacidad-tipo').value;
-  document.getElementById('food-cocina-cantidad-field').style.display = (cat === 'cocina' && tipo === 'cantidad') ? 'block' : 'none';
+  const info = categoriaInfo(cat);
+  const isProvee = !!info && info.role === 'provee';
+  document.getElementById('food-cocina-cantidad-field').style.display = (isProvee && tipo === 'cantidad') ? 'block' : 'none';
 }
 
 function updateEstadoLabels(cat){
   const sel = document.getElementById('f-estado');
   const opts = sel.options;
-  if(cat === 'punto_comida'){
+  const info = categoriaInfo(cat);
+  if(info && info.role === 'necesita'){
     opts[0].textContent = 'Sin atender';
     opts[1].textContent = 'En proceso';
     opts[2].textContent = 'Atendida';
-  }else if(cat === 'cocina'){
+  }else if(info && info.role === 'provee'){
     opts[0].textContent = 'Disponible';
     opts[1].textContent = 'Capacidad limitada';
     opts[2].textContent = 'Sin capacidad disponible';
@@ -899,11 +1153,12 @@ async function saveReport(){
     actualizado: Date.now()
   };
 
-  if(categoria === 'cocina'){
+  const catInfo = categoriaInfo(categoria);
+  if(catInfo && catInfo.role === 'provee'){
     const tipo = document.getElementById('f-capacidad-tipo').value;
     report.capacidadTipo = tipo;
     report.platosCapacidad = tipo === 'cantidad' ? (parseInt(document.getElementById('f-platos-capacidad').value) || 0) : null;
-  }else if(categoria === 'punto_comida'){
+  }else if(catInfo && catInfo.role === 'necesita'){
     report.platosNecesarios = parseInt(document.getElementById('f-platos-necesarios').value) || 0;
     report.platosCubiertos = parseInt(document.getElementById('f-platos-cubiertos').value) || 0;
     report.atendidoPor = document.getElementById('f-atendido-por').value.trim();
