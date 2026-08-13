@@ -41,6 +41,7 @@
     --donacion-bebes:#38bdf8;
     --donacion-adulto:#57534e;
     --kits-aseo:#0d9488;
+    --colchones-carpas:#4338ca;
     --radius:10px;
   }
   *{box-sizing:border-box;}
@@ -124,9 +125,10 @@
   .popup-actions a.maps{background:var(--panel-2);color:var(--text);}
 
   #search-box{display:flex;gap:6px;align-items:center;}
+  .search-input-wrap{position:relative;width:220px;}
   #search-box input{
     padding:8px 10px;border-radius:8px;border:1px solid var(--border);
-    background:var(--panel-2);color:var(--text);font-size:13px;width:220px;
+    background:var(--panel-2);color:var(--text);font-size:13px;width:100%;
   }
   #search-box button{
     padding:8px 12px;border-radius:8px;border:1px solid var(--border);
@@ -208,7 +210,8 @@
   .btn.ghost{background:transparent;}
 
   .addr-row{display:flex;gap:8px;}
-  .addr-row input{flex:1;}
+  .addr-input-wrap{position:relative;flex:1;}
+  .addr-input-wrap input{width:100%;}
   .addr-row .addr-btn{
     flex:none;padding:10px 14px;border-radius:8px;border:1px solid var(--border);
     background:var(--panel-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;
@@ -219,6 +222,20 @@
   .addr-status.err{color:var(--red);}
   .addr-manual-link{font-size:12px;color:var(--text-dim);text-decoration:underline;cursor:pointer;margin-top:6px;display:inline-block;}
   .addr-manual-link:hover{color:var(--accent-ink);}
+
+  /* Sugerencias de dirección tipo "autocompletar" (Nominatim), mientras la persona
+     escribe, en vez de tener que escribir la dirección completa y presionar buscar. */
+  .suggestions-dropdown{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:60;
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    max-height:220px;overflow-y:auto;box-shadow:0 6px 16px rgba(0,0,0,0.14);
+    display:none;
+  }
+  .suggestions-dropdown.show{display:block;}
+  .suggestion-item{padding:8px 12px;font-size:13px;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);}
+  .suggestion-item:last-child{border-bottom:none;}
+  .suggestion-item:hover,.suggestion-item.active{background:var(--panel-2);}
+  .suggestion-empty{padding:8px 12px;font-size:12px;color:var(--text-dim);}
 
   .pin-hint{
     position:fixed;top:70px;left:50%;transform:translateX(-50%);
@@ -275,7 +292,10 @@
     <h1><span>Mapa de Ayuda</span> — Pereira</h1>
     <img src="data:image/webp;base64,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" alt="Gogó" class="gogo-logo" title="Una iniciativa de Gogó" />
     <div id="search-box">
-      <input id="search-input" type="text" placeholder="Buscar dirección o barrio…" />
+      <div class="search-input-wrap">
+        <input id="search-input" type="text" placeholder="Buscar dirección o barrio…" autocomplete="off" />
+        <div id="search-suggestions" class="suggestions-dropdown"></div>
+      </div>
       <button onclick="searchAddress()">Buscar</button>
     </div>
     <div class="stats">
@@ -298,6 +318,7 @@
     <button class="tipo-tab" data-tipo="donacion_bebes" onclick="selectTipoTab('donacion_bebes')"><span class="tab-dot" style="background:var(--donacion-bebes)"></span>Donaciones bebés</button>
     <button class="tipo-tab" data-tipo="donacion_adulto" onclick="selectTipoTab('donacion_adulto')"><span class="tab-dot" style="background:var(--donacion-adulto)"></span>Donaciones adulto mayor</button>
     <button class="tipo-tab" data-tipo="kits_aseo" onclick="selectTipoTab('kits_aseo')"><span class="tab-dot" style="background:var(--kits-aseo)"></span>Kits de aseo</button>
+    <button class="tipo-tab" data-tipo="colchones_carpas" onclick="selectTipoTab('colchones_carpas')"><span class="tab-dot" style="background:var(--colchones-carpas)"></span>Colchones/carpas</button>
   </nav>
 
   <main>
@@ -374,7 +395,10 @@
     <div class="field">
       <label>Dirección / referencia del lugar</label>
       <div class="addr-row">
-        <input id="f-direccion" type="text" placeholder="Ej: Barrio La Esneda, cra 10 # 5-20" />
+        <div class="addr-input-wrap">
+          <input id="f-direccion" type="text" placeholder="Ej: Barrio La Esneda, cra 10 # 5-20" autocomplete="off" />
+          <div id="addr-suggestions" class="suggestions-dropdown"></div>
+        </div>
         <button type="button" class="addr-btn" onclick="geocodeReportAddress()">Ubicar</button>
       </div>
       <div id="addr-status" class="addr-status"></div>
@@ -556,15 +580,14 @@ async function searchAddress(){
     alert("No se pudo buscar la dirección en este momento.");
   }
 }
-document.getElementById('search-input').addEventListener('keydown', e=>{
-  if(e.key === 'Enter') searchAddress();
-});
 
 /* ---------------- Ubicar el reporte escribiendo la dirección en texto ----------------
    Geocodifica el texto de "Dirección / referencia del lugar" (mismo servicio gratuito
    Nominatim/OSM ya usado por el buscador superior) y coloca el pin del reporte ahí,
    sin necesidad de hacer clic manualmente en el mapa. El clic manual en el mapa sigue
-   funcionando exactamente igual que antes (botón "O ubicar manualmente en el mapa"). */
+   funcionando exactamente igual que antes (botón "O ubicar manualmente en el mapa").
+   Esta función queda como respaldo manual (botón "Ubicar" / Enter sin sugerencia
+   seleccionada) — el flujo principal ahora es el autocompletado de abajo. */
 async function geocodeReportAddress(){
   const input = document.getElementById('f-direccion');
   const statusEl = document.getElementById('addr-status');
@@ -596,9 +619,120 @@ async function geocodeReportAddress(){
     statusEl.className = 'addr-status err';
   }
 }
-document.getElementById('f-direccion').addEventListener('keydown', e=>{
-  if(e.key === 'Enter'){ e.preventDefault(); geocodeReportAddress(); }
-});
+
+/* ---------------- Sugerencias de dirección mientras se escribe (autocompletado) ----------------
+   En vez de exigir escribir la dirección completa y presionar "Ubicar"/"Buscar", se muestra
+   una lista de sugerencias en tiempo real (mismo servicio gratuito Nominatim/OSM) a medida
+   que la persona escribe, similar a Google Maps. Al hacer clic (o Enter) sobre una sugerencia
+   se completa el campo y se ubica de una vez, sin un segundo paso manual de "buscar".
+   `onSelect(resultado)` recibe el resultado elegido de Nominatim; `fallbackEnter()` se usa
+   si se presiona Enter sin ninguna sugerencia resaltada (mantiene el comportamiento manual
+   de siempre como respaldo, por si Nominatim no devuelve nada útil). */
+function setupAddressAutocomplete(inputId, dropdownId, onSelect, fallbackEnter){
+  const input = document.getElementById(inputId);
+  const dropdown = document.getElementById(dropdownId);
+  let debounceTimer = null;
+  let activeIndex = -1;
+  let currentResults = [];
+
+  function hideDropdown(){
+    dropdown.classList.remove('show');
+    dropdown.innerHTML = '';
+    activeIndex = -1;
+    currentResults = [];
+  }
+
+  function updateActive(){
+    dropdown.querySelectorAll('.suggestion-item').forEach((el, i)=>{
+      el.classList.toggle('active', i === activeIndex);
+    });
+  }
+
+  function selectResult(r){
+    input.value = r.display_name;
+    hideDropdown();
+    onSelect(r);
+  }
+
+  function renderResults(results){
+    currentResults = results;
+    activeIndex = -1;
+    if(!results.length){
+      dropdown.innerHTML = '<div class="suggestion-empty">Sin resultados. Sigue escribiendo o ubica manualmente en el mapa.</div>';
+      dropdown.classList.add('show');
+      return;
+    }
+    dropdown.innerHTML = results.map((r, i) => `<div class="suggestion-item" data-index="${i}">${r.display_name}</div>`).join('');
+    dropdown.classList.add('show');
+    dropdown.querySelectorAll('.suggestion-item').forEach(el=>{
+      el.addEventListener('mousedown', (e)=>{
+        e.preventDefault();
+        selectResult(currentResults[parseInt(el.dataset.index)]);
+      });
+    });
+  }
+
+  async function fetchSuggestions(q){
+    try{
+      const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q=${encodeURIComponent(q + ', Pereira, Risaralda, Colombia')}`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+      const data = await res.json();
+      if(input.value.trim() === q) renderResults(data || []);
+    }catch(e){
+      hideDropdown();
+    }
+  }
+
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim();
+    clearTimeout(debounceTimer);
+    if(q.length < 3){ hideDropdown(); return; }
+    debounceTimer = setTimeout(()=> fetchSuggestions(q), 350);
+  });
+
+  input.addEventListener('keydown', e=>{
+    const isShowing = dropdown.classList.contains('show') && currentResults.length;
+    if(e.key === 'ArrowDown' && isShowing){
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, currentResults.length - 1);
+      updateActive();
+    }else if(e.key === 'ArrowUp' && isShowing){
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      updateActive();
+    }else if(e.key === 'Escape'){
+      hideDropdown();
+    }else if(e.key === 'Enter'){
+      if(isShowing && activeIndex >= 0){
+        e.preventDefault();
+        selectResult(currentResults[activeIndex]);
+      }else{
+        hideDropdown();
+        if(fallbackEnter){ e.preventDefault(); fallbackEnter(); }
+      }
+    }
+  });
+
+  input.addEventListener('blur', ()=>{
+    setTimeout(hideDropdown, 150);
+  });
+}
+
+setupAddressAutocomplete('search-input', 'search-suggestions', (r)=>{
+  const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+  map.setCenter({lat, lng});
+  map.setZoom(16);
+}, searchAddress);
+
+setupAddressAutocomplete('f-direccion', 'addr-suggestions', (r)=>{
+  const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+  pendingLatLng = {lat, lng};
+  map.setCenter({lat, lng});
+  map.setZoom(16);
+  const statusEl = document.getElementById('addr-status');
+  statusEl.textContent = '✓ Ubicación seleccionada y lista para guardar.';
+  statusEl.className = 'addr-status ok';
+}, geocodeReportAddress);
 
 /* Oculta el modal temporalmente para permitir marcar el pin con un clic en el mapa
    (mismo mecanismo de siempre: pinPlacementMode + listener de clic del mapa de arriba),
@@ -668,7 +802,13 @@ const TIPOS_AYUDA = [
     labelProvee:'Punto de kits de aseo disponible', labelNecesita:'Punto que necesita kits de aseo',
     chipProvee:'Dan kits de aseo', chipNecesita:'Necesita aseo',
     colorProvee:'--kits-aseo', colorNecesita:'--kits-aseo',
-    statProveeLabel:'puntos de kits de aseo activos' }
+    statProveeLabel:'puntos de kits de aseo activos' },
+  { key:'colchones_carpas', label:'Colchones/carpas', unidad:'unidades',
+    catProvee:'colchones_carpas_provee', catNecesita:'colchones_carpas_necesita',
+    labelProvee:'Punto de colchones/carpas disponible', labelNecesita:'Punto que necesita colchones/carpas',
+    chipProvee:'Dan colchones/carpas', chipNecesita:'Necesita colchones/carpas',
+    colorProvee:'--colchones-carpas', colorNecesita:'--colchones-carpas',
+    statProveeLabel:'puntos de colchones/carpas activos' }
 ];
 
 /* Dado un valor de categoria, devuelve {tipo, role} o null si es una
