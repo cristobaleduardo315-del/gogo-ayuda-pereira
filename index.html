@@ -40,6 +40,7 @@
     --donacion-ropa:#db2777;
     --donacion-bebes:#38bdf8;
     --donacion-adulto:#57534e;
+    --kits-aseo:#0d9488;
     --radius:10px;
   }
   *{box-sizing:border-box;}
@@ -296,6 +297,7 @@
     <button class="tipo-tab" data-tipo="donacion_ropa" onclick="selectTipoTab('donacion_ropa')"><span class="tab-dot" style="background:var(--donacion-ropa)"></span>Donaciones ropa</button>
     <button class="tipo-tab" data-tipo="donacion_bebes" onclick="selectTipoTab('donacion_bebes')"><span class="tab-dot" style="background:var(--donacion-bebes)"></span>Donaciones bebés</button>
     <button class="tipo-tab" data-tipo="donacion_adulto" onclick="selectTipoTab('donacion_adulto')"><span class="tab-dot" style="background:var(--donacion-adulto)"></span>Donaciones adulto mayor</button>
+    <button class="tipo-tab" data-tipo="kits_aseo" onclick="selectTipoTab('kits_aseo')"><span class="tab-dot" style="background:var(--kits-aseo)"></span>Kits de aseo</button>
   </nav>
 
   <main>
@@ -660,7 +662,13 @@ const TIPOS_AYUDA = [
     labelProvee:'Punto de donación para adulto mayor disponible', labelNecesita:'Punto que necesita artículos para adulto mayor',
     chipProvee:'Dan adulto mayor', chipNecesita:'Necesita adulto mayor',
     colorProvee:'--donacion-adulto', colorNecesita:'--donacion-adulto',
-    statProveeLabel:'puntos de donación para adulto mayor activos' }
+    statProveeLabel:'puntos de donación para adulto mayor activos' },
+  { key:'kits_aseo', label:'Kits de aseo', unidad:'kits',
+    catProvee:'kits_aseo_provee', catNecesita:'kits_aseo_necesita',
+    labelProvee:'Punto de kits de aseo disponible', labelNecesita:'Punto que necesita kits de aseo',
+    chipProvee:'Dan kits de aseo', chipNecesita:'Necesita aseo',
+    colorProvee:'--kits-aseo', colorNecesita:'--kits-aseo',
+    statProveeLabel:'puntos de kits de aseo activos' }
 ];
 
 /* Dado un valor de categoria, devuelve {tipo, role} o null si es una
