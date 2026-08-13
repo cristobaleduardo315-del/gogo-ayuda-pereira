@@ -222,8 +222,7 @@
 <div id="gate">
   <div class="card">
     <h1>Mapa de Ayuda — Pereira</h1>
-    <p>Acceso para el equipo de coordinación. Ingresa el código compartido para continuar.</p>
-    <input id="gate-code" type="password" placeholder="Código de acceso" autocomplete="off" />
+    <p>Ingresa tu nombre para continuar.</p>
     <input id="gate-name" type="text" placeholder="Tu nombre (para identificar tus reportes)" autocomplete="off" style="text-align:left;letter-spacing:normal;" />
     <button onclick="tryEnter()">Entrar</button>
     <div class="err" id="gate-err"></div>
@@ -377,9 +376,6 @@ const firebaseConfig = {
   appId: "1:984621155917:web:beeccea5aea47cfc43be04"
 };
 
-// Código de acceso compartido del equipo (cámbialo por el tuyo)
-const TEAM_ACCESS_CODE = "PEREIRA2026";
-
 /* ========================================================================= */
 
 let db = null;
@@ -422,13 +418,8 @@ function showConfigWarning(msg){
 
 /* ---------------- Gate de acceso ---------------- */
 function tryEnter(){
-  const code = document.getElementById('gate-code').value.trim();
   const name = document.getElementById('gate-name').value.trim();
   const err = document.getElementById('gate-err');
-  if(code !== TEAM_ACCESS_CODE){
-    err.textContent = "Código incorrecto. Verifica con el coordinador del equipo.";
-    return;
-  }
   if(!name){
     err.textContent = "Por favor ingresa tu nombre.";
     return;
@@ -440,9 +431,6 @@ function tryEnter(){
   setTimeout(()=>{ google.maps.event.trigger(map, 'resize'); map.setCenter({lat: PEREIRA_CENTER[0], lng: PEREIRA_CENTER[1]}); }, 100);
 }
 
-document.getElementById('gate-code').addEventListener('keydown', e=>{
-  if(e.key === 'Enter') tryEnter();
-});
 document.getElementById('gate-name').addEventListener('keydown', e=>{
   if(e.key === 'Enter') tryEnter();
 });
