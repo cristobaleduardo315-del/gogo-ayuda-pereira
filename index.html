@@ -168,6 +168,19 @@
   .btn.danger{background:transparent;color:var(--red);border-color:var(--red);}
   .btn.ghost{background:transparent;}
 
+  .addr-row{display:flex;gap:8px;}
+  .addr-row input{flex:1;}
+  .addr-row .addr-btn{
+    flex:none;padding:10px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer;
+  }
+  .addr-row .addr-btn:hover{background:var(--border);}
+  .addr-status{font-size:12px;margin-top:6px;min-height:14px;}
+  .addr-status.ok{color:var(--accent-ink);}
+  .addr-status.err{color:var(--red);}
+  .addr-manual-link{font-size:12px;color:var(--text-dim);text-decoration:underline;cursor:pointer;margin-top:6px;display:inline-block;}
+  .addr-manual-link:hover{color:var(--accent-ink);}
+
   .pin-hint{
     position:fixed;top:70px;left:50%;transform:translateX(-50%);
     background:var(--accent);color:var(--accent-text);padding:8px 16px;border-radius:20px;
@@ -313,7 +326,12 @@
 
     <div class="field">
       <label>Dirección / referencia del lugar</label>
-      <input id="f-direccion" type="text" placeholder="Ej: Barrio La Esneda, cra 10 # 5-20" />
+      <div class="addr-row">
+        <input id="f-direccion" type="text" placeholder="Ej: Barrio La Esneda, cra 10 # 5-20" />
+        <button type="button" class="addr-btn" onclick="geocodeReportAddress()">Ubicar</button>
+      </div>
+      <div id="addr-status" class="addr-status"></div>
+      <div class="addr-manual-link" id="addr-manual-link" onclick="pickLocationOnMap()">O ubicar manualmente en el mapa</div>
     </div>
 
     <div class="field">
@@ -474,6 +492,11 @@ map.addListener('click', (e)=>{
     pinPlacementMode = false;
     document.getElementById('pin-hint').style.display = 'none';
     document.getElementById('modal-overlay').classList.add('show');
+    const statusEl = document.getElementById('addr-status');
+    if(statusEl){
+      statusEl.textContent = '📍 Ubicación marcada manualmente en el mapa.';
+      statusEl.className = 'addr-status ok';
+    }
   }
 });
 
@@ -499,6 +522,55 @@ async function searchAddress(){
 document.getElementById('search-input').addEventListener('keydown', e=>{
   if(e.key === 'Enter') searchAddress();
 });
+
+/* ---------------- Ubicar el reporte escribiendo la dirección en texto ----------------
+   Geocodifica el texto de "Dirección / referencia del lugar" (mismo servicio gratuito
+   Nominatim/OSM ya usado por el buscador superior) y coloca el pin del reporte ahí,
+   sin necesidad de hacer clic manualmente en el mapa. El clic manual en el mapa sigue
+   funcionando exactamente igual que antes (botón "O ubicar manualmente en el mapa"). */
+async function geocodeReportAddress(){
+  const input = document.getElementById('f-direccion');
+  const statusEl = document.getElementById('addr-status');
+  const q = input.value.trim();
+  if(!q){
+    statusEl.textContent = 'Escribe primero una dirección o referencia.';
+    statusEl.className = 'addr-status err';
+    return;
+  }
+  statusEl.textContent = 'Buscando ubicación…';
+  statusEl.className = 'addr-status';
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q + ', Pereira, Risaralda, Colombia')}`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    if(data && data.length){
+      const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+      pendingLatLng = {lat, lng};
+      map.setCenter({lat, lng});
+      map.setZoom(16);
+      statusEl.textContent = '✓ Ubicación encontrada y lista para guardar.';
+      statusEl.className = 'addr-status ok';
+    }else{
+      statusEl.textContent = 'No se encontró esa dirección. Intenta ser más específico (ej: nombre del barrio) o usa "ubicar manualmente en el mapa".';
+      statusEl.className = 'addr-status err';
+    }
+  }catch(e){
+    statusEl.textContent = 'No se pudo buscar la dirección en este momento. Intenta de nuevo o ubica manualmente en el mapa.';
+    statusEl.className = 'addr-status err';
+  }
+}
+document.getElementById('f-direccion').addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){ e.preventDefault(); geocodeReportAddress(); }
+});
+
+/* Oculta el modal temporalmente para permitir marcar el pin con un clic en el mapa
+   (mismo mecanismo de siempre: pinPlacementMode + listener de clic del mapa de arriba),
+   conservando los datos ya escritos en el formulario. */
+function pickLocationOnMap(){
+  document.getElementById('modal-overlay').classList.remove('show');
+  pinPlacementMode = true;
+  document.getElementById('pin-hint').style.display = 'block';
+}
 
 /* ---------------- Colores por estado/urgencia ---------------- */
 function colorFor(report){
@@ -725,8 +797,10 @@ function openNewReportModal(){
   document.getElementById('modal-title').textContent = 'Nuevo reporte de zona';
   document.getElementById('btn-delete').style.display = 'none';
   clearForm();
-  pinPlacementMode = true;
-  document.getElementById('pin-hint').style.display = 'block';
+  pendingLatLng = null;
+  pinPlacementMode = false;
+  document.getElementById('pin-hint').style.display = 'none';
+  document.getElementById('modal-overlay').classList.add('show');
 }
 
 function openEditReportModal(id){
@@ -747,6 +821,8 @@ function openEditReportModal(id){
   document.getElementById('f-platos-cubiertos').value = r.platosCubiertos || '';
   document.getElementById('f-atendido-por').value = r.atendidoPor || '';
   updateFoodFieldsVisibility();
+  document.getElementById('addr-status').textContent = '';
+  document.getElementById('addr-status').className = 'addr-status';
   pendingLatLng = {lat:r.lat, lng:r.lng};
   document.getElementById('modal-overlay').classList.add('show');
 }
@@ -764,6 +840,8 @@ function clearForm(){
   document.getElementById('f-platos-necesarios').value = '';
   document.getElementById('f-platos-cubiertos').value = '';
   document.getElementById('f-atendido-por').value = '';
+  document.getElementById('addr-status').textContent = '';
+  document.getElementById('addr-status').className = 'addr-status';
   updateFoodFieldsVisibility();
 }
 
@@ -814,7 +892,7 @@ function closeModal(){
 
 async function saveReport(){
   if(!pendingLatLng){
-    alert("Falta ubicar el punto en el mapa.");
+    alert("Falta ubicar el reporte: escribe la dirección arriba y presiona \"Ubicar\", o usa \"ubicar manualmente en el mapa\".");
     return;
   }
   const categoria = document.getElementById('f-categoria').value;
