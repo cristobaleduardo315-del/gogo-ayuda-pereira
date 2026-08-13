@@ -227,6 +227,8 @@
       <div class="stat"><span class="dot red"></span> <span id="count-pendiente">0</span> pendientes</div>
       <div class="stat"><span class="dot blue"></span> <span id="count-atencion">0</span> en atención</div>
       <div class="stat"><span class="dot green"></span> <span id="count-resuelto">0</span> resueltos</div>
+      <div class="stat">🍽️ <span id="count-platos-faltan">0</span> platos por cubrir</div>
+      <div class="stat">🍲 <span id="count-cocinas">0</span> cocinas activas</div>
     </div>
   </header>
 
@@ -238,6 +240,8 @@
         <div class="chip" data-filter="status" data-value="pendiente">Pendientes</div>
         <div class="chip" data-filter="status" data-value="en_atencion">En atención</div>
         <div class="chip" data-filter="status" data-value="resuelto">Resueltos</div>
+        <div class="chip" data-filter="categoria" data-value="cocina" id="chip-cocinas">🍲 Cocinas</div>
+        <div class="chip" data-filter="categoria" data-value="punto_comida" id="chip-comida">🍽️ Comida</div>
       </div>
       <div id="report-list"></div>
     </aside>
@@ -264,6 +268,8 @@
         <option value="riesgo">⚠️ Riesgo estructural</option>
         <option value="desaparecido">❓ Persona desaparecida</option>
         <option value="otro">📌 Otro</option>
+        <option value="cocina">🍲 Cocina / Centro de preparación</option>
+        <option value="punto_comida">🍽️ Punto que necesita comida</option>
       </select>
     </div>
 
@@ -279,6 +285,29 @@
       <div class="field">
         <label>Personas afectadas (aprox.)</label>
         <input id="f-personas" type="number" min="0" placeholder="Ej: 5" />
+      </div>
+    </div>
+
+    <div class="field food-fields" id="food-cocina-fields" style="display:none;">
+      <label>Capacidad de la cocina</label>
+      <select id="f-capacidad-tipo">
+        <option value="cantidad">Cantidad específica de platos</option>
+        <option value="total">Puede cubrir la necesidad total de una zona</option>
+      </select>
+    </div>
+    <div class="field food-fields" id="food-cocina-cantidad-field" style="display:none;">
+      <label>¿Cuántos platos puede preparar?</label>
+      <input id="f-platos-capacidad" type="number" min="0" placeholder="Ej: 150" />
+    </div>
+
+    <div class="row2 food-fields" id="food-punto-fields" style="display:none;">
+      <div class="field">
+        <label>Platos necesarios</label>
+        <input id="f-platos-necesarios" type="number" min="0" placeholder="Ej: 100" />
+      </div>
+      <div class="field">
+        <label>Platos ya cubiertos</label>
+        <input id="f-platos-cubiertos" type="number" min="0" placeholder="Ej: 0" />
       </div>
     </div>
 
@@ -462,35 +491,67 @@ function catLabel(cat){
   const map = {
     rescate:'🚨 Rescate / personas atrapadas', medico:'🏥 Atención médica',
     agua:'💧 Agua potable', alimentos:'🍲 Alimentos', refugio:'🏠 Refugio / albergue',
-    riesgo:'⚠️ Riesgo estructural', desaparecido:'❓ Persona desaparecida', otro:'📌 Otro'
+    riesgo:'⚠️ Riesgo estructural', desaparecido:'❓ Persona desaparecida', otro:'📌 Otro',
+    cocina:'🍲 Cocina / Centro de preparación', punto_comida:'🍽️ Punto que necesita comida'
   };
   return map[cat] || cat;
 }
-function estadoLabel(e){
+function estadoLabel(e, categoria){
+  if(categoria === 'punto_comida'){
+    return e === 'pendiente' ? 'Sin cubrir' : e === 'en_atencion' ? 'Parcialmente cubierto' : 'Cubierto totalmente';
+  }
+  if(categoria === 'cocina'){
+    return e === 'pendiente' ? 'Disponible' : e === 'en_atencion' ? 'Capacidad limitada' : 'Sin capacidad disponible';
+  }
   return e === 'pendiente' ? 'Pendiente' : e === 'en_atencion' ? 'En atención' : 'Resuelto';
 }
+function foodInfoLine(r){
+  if(r.categoria === 'cocina'){
+    const cap = r.capacidadTipo === 'total' ? 'Cubre la necesidad total de una zona' : `${r.platosCapacidad||0} platos`;
+    return `<div class="meta"><span>🍲 Capacidad: ${cap}</span></div>`;
+  }
+  if(r.categoria === 'punto_comida'){
+    const nec = r.platosNecesarios||0, cub = r.platosCubiertos||0;
+    return `<div class="meta"><span>🍽️ Necesita: ${nec} platos · Cubierto: ${cub}</span></div>`;
+  }
+  return '';
+}
 
-function makeIcon(color){
+function makeIcon(color, emoji){
+  if(emoji){
+    return L.divIcon({
+      className:'',
+      html:`<div style="width:26px;height:26px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #0b0b0b;box-shadow:0 2px 6px rgba(0,0,0,.5);">${emoji}</div>`,
+      iconSize:[26,26], iconAnchor:[13,13], popupAnchor:[0,-13]
+    });
+  }
   return L.divIcon({
     className:'',
     html:`<div style="width:20px;height:20px;border-radius:50% 50% 50% 0;background:${color};transform:rotate(-45deg);border:2px solid #0b0b0b;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>`,
     iconSize:[20,20], iconAnchor:[10,20], popupAnchor:[0,-20]
   });
 }
+function iconEmojiFor(categoria){
+  if(categoria === 'cocina') return '🍲';
+  if(categoria === 'punto_comida') return '🍽️';
+  return null;
+}
 
 /* ---------------- Render de marcador + tarjeta ---------------- */
 function upsertMarker(id, report){
   reportsById[id] = report;
   const color = colorFor(report);
+  const emoji = iconEmojiFor(report.categoria);
   if(markers[id]){
     markers[id].setLatLng([report.lat, report.lng]);
-    markers[id].setIcon(makeIcon(color));
+    markers[id].setIcon(makeIcon(color, emoji));
   }else{
-    const m = L.marker([report.lat, report.lng], {icon: makeIcon(color)}).addTo(map);
+    const m = L.marker([report.lat, report.lng], {icon: makeIcon(color, emoji)}).addTo(map);
     m.on('click', ()=> openEditReportModal(id));
     markers[id] = m;
   }
-  markers[id].bindPopup(`<b>${catLabel(report.categoria)}</b><br>${report.direccion || ''}<br><i>${estadoLabel(report.estado)}</i>`);
+  const foodExtra = report.categoria==='cocina' || report.categoria==='punto_comida' ? foodInfoLine(report).replace('<div class="meta"><span>','<br>').replace('</span></div>','') : '';
+  markers[id].bindPopup(`<b>${catLabel(report.categoria)}</b><br>${report.direccion || ''}<br><i>${estadoLabel(report.estado, report.categoria)}</i>${foodExtra}`);
   renderList();
   updateStats();
 }
@@ -507,14 +568,30 @@ function updateStats(){
   document.getElementById('count-pendiente').textContent = vals.filter(r=>r.estado==='pendiente').length;
   document.getElementById('count-atencion').textContent = vals.filter(r=>r.estado==='en_atencion').length;
   document.getElementById('count-resuelto').textContent = vals.filter(r=>r.estado==='resuelto').length;
+
+  let platosFaltan = 0, cocinasActivas = 0;
+  vals.forEach(r=>{
+    if(r.categoria === 'punto_comida' && r.estado !== 'resuelto'){
+      platosFaltan += Math.max((r.platosNecesarios||0) - (r.platosCubiertos||0), 0);
+    }
+    if(r.categoria === 'cocina' && r.estado !== 'resuelto'){
+      cocinasActivas++;
+    }
+  });
+  document.getElementById('count-platos-faltan').textContent = platosFaltan;
+  document.getElementById('count-cocinas').textContent = cocinasActivas;
 }
 
 const urgencyRank = {alta:0, media:1, baja:2};
+let currentFilterCategoria = 'all';
 function renderList(){
   const list = document.getElementById('report-list');
   let entries = Object.entries(reportsById);
   if(currentFilterStatus !== 'all'){
     entries = entries.filter(([id,r]) => r.estado === currentFilterStatus);
+  }
+  if(currentFilterCategoria !== 'all'){
+    entries = entries.filter(([id,r]) => r.categoria === currentFilterCategoria);
   }
   entries.sort((a,b)=>{
     const ra = urgencyRank[a[1].urgencia] ?? 3, rb = urgencyRank[b[1].urgencia] ?? 3;
@@ -529,15 +606,17 @@ function renderList(){
 
   list.innerHTML = entries.map(([id, r])=>{
     const color = colorFor(r);
+    const isFood = r.categoria === 'cocina' || r.categoria === 'punto_comida';
     return `<div class="report-card" style="border-left-color:${color}" onclick="focusReport('${id}')">
       <div class="top">
         <div class="cat">${catLabel(r.categoria)}</div>
-        <div class="badge">${estadoLabel(r.estado)}</div>
+        <div class="badge">${estadoLabel(r.estado, r.categoria)}</div>
       </div>
       <div class="desc">${(r.descripcion||'').slice(0,120)}${(r.descripcion||'').length>120?'…':''}</div>
+      ${isFood ? foodInfoLine(r) : ''}
       <div class="meta">
         <span>📍 ${(r.direccion||'Sin dirección').slice(0,30)}</span>
-        <span>${r.urgencia==='alta'?'🔴':r.urgencia==='media'?'🟠':'🟡'} ${r.personas||0} pers.</span>
+        ${isFood ? '' : `<span>${r.urgencia==='alta'?'🔴':r.urgencia==='media'?'🟠':'🟡'} ${r.personas||0} pers.</span>`}
       </div>
     </div>`;
   }).join('');
@@ -554,9 +633,21 @@ function focusReport(id){
 /* ---------------- Filtros ---------------- */
 document.querySelectorAll('.chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
-    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-    chip.classList.add('active');
-    currentFilterStatus = chip.dataset.value;
+    const filterType = chip.dataset.filter;
+    if(filterType === 'categoria'){
+      const alreadyActive = chip.classList.contains('active');
+      document.querySelectorAll('.chip[data-filter="categoria"]').forEach(c=>c.classList.remove('active'));
+      if(alreadyActive){
+        currentFilterCategoria = 'all';
+      }else{
+        chip.classList.add('active');
+        currentFilterCategoria = chip.dataset.value;
+      }
+    }else{
+      document.querySelectorAll('.chip[data-filter="status"]').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      currentFilterStatus = chip.dataset.value;
+    }
     renderList();
   });
 });
@@ -583,6 +674,11 @@ function openEditReportModal(id){
   document.getElementById('f-descripcion').value = r.descripcion || '';
   document.getElementById('f-contacto').value = r.contacto || '';
   document.getElementById('f-estado').value = r.estado;
+  document.getElementById('f-capacidad-tipo').value = r.capacidadTipo || 'cantidad';
+  document.getElementById('f-platos-capacidad').value = r.platosCapacidad || '';
+  document.getElementById('f-platos-necesarios').value = r.platosNecesarios || '';
+  document.getElementById('f-platos-cubiertos').value = r.platosCubiertos || '';
+  updateFoodFieldsVisibility();
   pendingLatLng = {lat:r.lat, lng:r.lng};
   document.getElementById('modal-overlay').classList.add('show');
 }
@@ -595,7 +691,48 @@ function clearForm(){
   document.getElementById('f-descripcion').value = '';
   document.getElementById('f-contacto').value = '';
   document.getElementById('f-estado').value = 'pendiente';
+  document.getElementById('f-capacidad-tipo').value = 'cantidad';
+  document.getElementById('f-platos-capacidad').value = '';
+  document.getElementById('f-platos-necesarios').value = '';
+  document.getElementById('f-platos-cubiertos').value = '';
+  updateFoodFieldsVisibility();
 }
+
+/* ---------------- Campos dinámicos: cocinas / puntos de comida ---------------- */
+function updateFoodFieldsVisibility(){
+  const cat = document.getElementById('f-categoria').value;
+  document.getElementById('food-cocina-fields').style.display = cat === 'cocina' ? 'block' : 'none';
+  document.getElementById('food-punto-fields').style.display = cat === 'punto_comida' ? 'grid' : 'none';
+  updateCapacidadTipoVisibility();
+  updateEstadoLabels(cat);
+}
+
+function updateCapacidadTipoVisibility(){
+  const cat = document.getElementById('f-categoria').value;
+  const tipo = document.getElementById('f-capacidad-tipo').value;
+  document.getElementById('food-cocina-cantidad-field').style.display = (cat === 'cocina' && tipo === 'cantidad') ? 'block' : 'none';
+}
+
+function updateEstadoLabels(cat){
+  const sel = document.getElementById('f-estado');
+  const opts = sel.options;
+  if(cat === 'punto_comida'){
+    opts[0].textContent = 'Sin cubrir';
+    opts[1].textContent = 'Parcialmente cubierto';
+    opts[2].textContent = 'Cubierto totalmente';
+  }else if(cat === 'cocina'){
+    opts[0].textContent = 'Disponible';
+    opts[1].textContent = 'Capacidad limitada';
+    opts[2].textContent = 'Sin capacidad disponible';
+  }else{
+    opts[0].textContent = 'Pendiente';
+    opts[1].textContent = 'En atención';
+    opts[2].textContent = 'Resuelto';
+  }
+}
+
+document.getElementById('f-categoria').addEventListener('change', updateFoodFieldsVisibility);
+document.getElementById('f-capacidad-tipo').addEventListener('change', updateCapacidadTipoVisibility);
 
 function closeModal(){
   document.getElementById('modal-overlay').classList.remove('show');
@@ -610,8 +747,9 @@ async function saveReport(){
     alert("Falta ubicar el punto en el mapa.");
     return;
   }
+  const categoria = document.getElementById('f-categoria').value;
   const report = {
-    categoria: document.getElementById('f-categoria').value,
+    categoria: categoria,
     urgencia: document.getElementById('f-urgencia').value,
     personas: parseInt(document.getElementById('f-personas').value) || 0,
     direccion: document.getElementById('f-direccion').value.trim(),
@@ -624,6 +762,15 @@ async function saveReport(){
     timestamp: editingId ? (reportsById[editingId]?.timestamp || Date.now()) : Date.now(),
     actualizado: Date.now()
   };
+
+  if(categoria === 'cocina'){
+    const tipo = document.getElementById('f-capacidad-tipo').value;
+    report.capacidadTipo = tipo;
+    report.platosCapacidad = tipo === 'cantidad' ? (parseInt(document.getElementById('f-platos-capacidad').value) || 0) : null;
+  }else if(categoria === 'punto_comida'){
+    report.platosNecesarios = parseInt(document.getElementById('f-platos-necesarios').value) || 0;
+    report.platosCubiertos = parseInt(document.getElementById('f-platos-cubiertos').value) || 0;
+  }
 
   if(firebaseReady && db){
     try{
