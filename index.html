@@ -1082,25 +1082,56 @@ function foodInfoLine(r){
 }
 
 /* Glyphs blancos dibujados dentro del círculo de color. La cocina/comida
-   (Alimentación) mantiene sus glifos originales (cuchara / exclamación).
-   Los 7 tipos nuevos usan un glifo genérico por rol: "+" para quien
-   ofrece/tiene capacidad, "!" (el mismo de siempre) para quien necesita.
-   La distinción entre tipos la da el color fijo del círculo, no el glifo. */
+   (Alimentación) mantiene sus glifos originales (cuchara / exclamación),
+   que ya identifican categoría y rol en un solo ícono.
+   Los 9 tipos nuevos usan un ícono SVG propio por categoría (gota de agua,
+   cruz médica, huella de mascota, bolsa de mercado, camiseta, biberón,
+   corazón, botella de jabón, carpa) para que se reconozca de un vistazo
+   de qué tipo de ayuda se trata — y una insignia pequeña en la esquina
+   (verde "+" / rojo "!") para distinguir ofrece vs. necesita dentro de
+   ese mismo tipo, ya que antes esa distinción dependía solo del glifo. */
+const TIPO_ICON_PATHS = {
+  hidratacion: `<path d="M12 4.2c-2.7 3.6-4.6 6.5-4.6 9a4.6 4.6 0 0 0 9.2 0c0-2.5-1.9-5.4-4.6-9z" fill="#ffffff"/>`,
+  medicina_humana: `<rect x="10.4" y="5.8" width="3.2" height="12.4" rx="1" fill="#ffffff"/>
+    <rect x="5.8" y="10.4" width="12.4" height="3.2" rx="1" fill="#ffffff"/>`,
+  medicina_mascotas: `<ellipse cx="12" cy="15.3" rx="4" ry="3.2" fill="#ffffff"/>
+    <circle cx="7.3" cy="8.8" r="1.7" fill="#ffffff"/>
+    <circle cx="11" cy="6.4" r="1.8" fill="#ffffff"/>
+    <circle cx="15" cy="6.4" r="1.8" fill="#ffffff"/>
+    <circle cx="16.7" cy="9.1" r="1.7" fill="#ffffff"/>`,
+  alimentos_np: `<path d="M7.8 9.3h8.4l0.9 9.4a1.4 1.4 0 0 1-1.4 1.5H8.3a1.4 1.4 0 0 1-1.4-1.5l0.9-9.4z" fill="#ffffff"/>
+    <path d="M9.5 9.3V8.1a2.5 2.5 0 0 1 5 0v1.2" fill="none" stroke="#ffffff" stroke-width="1.4"/>`,
+  donacion_ropa: `<path d="M8.4 5.6L5.4 7.9l1.7 2.4 1.3-0.9v8.9a0.9 0.9 0 0 0 0.9 0.9h5.4a0.9 0.9 0 0 0 0.9-0.9v-8.9l1.3 0.9 1.7-2.4-3-2.3c-0.6 0.8-1.6 1.4-2.8 1.4s-2.2-0.6-2.8-1.4z" fill="#ffffff"/>`,
+  donacion_bebes: `<rect x="9.7" y="11.2" width="4.6" height="7.4" rx="1.4" fill="#ffffff"/>
+    <rect x="10.5" y="8.4" width="3" height="3.2" fill="#ffffff"/>
+    <rect x="10" y="6.6" width="4" height="1.9" rx="0.9" fill="#ffffff"/>`,
+  donacion_adulto: `<path d="M12 18.4s-6-3.8-6-8.3a3.5 3.5 0 0 1 6-2.4 3.5 3.5 0 0 1 6 2.4c0 4.5-6 8.3-6 8.3z" fill="#ffffff"/>`,
+  kits_aseo: `<rect x="9.3" y="9.3" width="5.4" height="9.3" rx="1.8" fill="#ffffff"/>
+    <rect x="10.6" y="6.6" width="2.8" height="3.2" rx="0.9" fill="#ffffff"/>`,
+  colchones_carpas: `<path d="M12 5.6L19 19H5z" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M12 5.6V19" stroke="#ffffff" stroke-width="1.3"/>`
+};
+function roleBadge(role){
+  const bg = role === 'provee' ? cssVar('--green') : cssVar('--red');
+  const glyph = role === 'provee'
+    ? `<rect x="18.7" y="17.3" width="1.6" height="4.4" rx="0.6" fill="#ffffff"/><rect x="17.3" y="18.7" width="4.4" height="1.6" rx="0.6" fill="#ffffff"/>`
+    : `<rect x="19.2" y="17.1" width="1.4" height="3.4" rx="0.6" fill="#ffffff"/><circle cx="19.9" cy="21.3" r="0.9" fill="#ffffff"/>`;
+  return `<circle cx="19.7" cy="19.7" r="4.7" fill="${bg}" stroke="#ffffff" stroke-width="1"/>${glyph}`;
+}
 function glyphFor(categoria){
   if(categoria === 'cocina'){
     // cuchara: óvalo (cuenco) + mango
     return `<ellipse cx="13" cy="8.3" rx="3.1" ry="4.1" fill="#ffffff"/>
       <rect x="11.9" y="11.6" width="2.2" height="8.6" rx="1.1" fill="#ffffff"/>`;
   }
-  const EXCLAMACION = `<rect x="11.7" y="6" width="2.6" height="9.2" rx="1.3" fill="#ffffff"/>
+  if(categoria === 'punto_comida'){
+    return `<rect x="11.7" y="6" width="2.6" height="9.2" rx="1.3" fill="#ffffff"/>
       <circle cx="13" cy="18.2" r="1.7" fill="#ffffff"/>`;
-  if(categoria === 'punto_comida') return EXCLAMACION;
+  }
   const info = categoriaInfo(categoria);
   if(!info) return '';
-  if(info.role === 'necesita') return EXCLAMACION;
-  // "+" genérico para quien ofrece/tiene capacidad
-  return `<rect x="11.3" y="6.5" width="3.4" height="13" rx="1" fill="#ffffff"/>
-    <rect x="6.5" y="11.3" width="13" height="3.4" rx="1" fill="#ffffff"/>`;
+  const icon = TIPO_ICON_PATHS[info.tipo.key] || '';
+  return icon + roleBadge(info.role);
 }
 
 function makeIcon(color, isCircle, categoria){
