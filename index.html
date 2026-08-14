@@ -126,6 +126,43 @@
 
   #search-box{display:flex;gap:6px;align-items:center;}
   .search-input-wrap{position:relative;width:220px;}
+
+  /* ---------- Selector rápido de ciudad (ventana flotante) ---------- */
+  .city-select-wrap{position:relative;}
+  #city-btn{
+    display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;
+    border:1px solid var(--border);background:var(--panel-2);color:var(--text);
+    cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;
+  }
+  #city-btn:hover{background:var(--border);}
+  #city-btn svg{flex:none;}
+  .city-panel{
+    position:absolute;top:calc(100% + 6px);left:0;z-index:70;
+    width:260px;max-height:360px;display:none;flex-direction:column;
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);overflow:hidden;
+  }
+  .city-panel.show{display:flex;}
+  .city-panel-header{
+    padding:10px 12px;font-size:13px;font-weight:700;color:var(--text);
+    border-bottom:1px solid var(--border);background:var(--panel-2);
+  }
+  .city-panel-search{padding:8px;border-bottom:1px solid var(--border);}
+  .city-panel-search input{
+    width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text);font-size:13px;
+  }
+  .city-list{overflow-y:auto;flex:1;padding:4px 0;}
+  .city-item{
+    padding:8px 14px;font-size:13px;color:var(--text);cursor:pointer;
+  }
+  .city-item:hover,.city-item.active{background:var(--panel-2);}
+  .city-item.priority{font-weight:600;}
+  .city-divider{
+    padding:6px 14px 4px;font-size:10px;font-weight:700;letter-spacing:.4px;
+    color:var(--text-dim);text-transform:uppercase;
+  }
+  .city-empty{padding:10px 14px;font-size:12px;color:var(--text-dim);}
   #search-box input{
     padding:8px 10px;border-radius:8px;border:1px solid var(--border);
     background:var(--panel-2);color:var(--text);font-size:13px;width:100%;
@@ -297,6 +334,19 @@
         <div id="search-suggestions" class="suggestions-dropdown"></div>
       </div>
       <button onclick="searchAddress()">Buscar</button>
+    </div>
+    <div class="city-select-wrap">
+      <button id="city-btn" type="button" onclick="toggleCityPanel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        Ciudad
+      </button>
+      <div class="city-panel" id="city-panel">
+        <div class="city-panel-header">Ciudad</div>
+        <div class="city-panel-search">
+          <input id="city-filter" type="text" placeholder="Buscar ciudad…" autocomplete="off" />
+        </div>
+        <div class="city-list" id="city-list"></div>
+      </div>
     </div>
     <div class="stats">
       <div class="stat"><span class="dot red"></span> <span id="count-pendiente">0</span> pendientes</div>
@@ -733,6 +783,120 @@ setupAddressAutocomplete('f-direccion', 'addr-suggestions', (r)=>{
   statusEl.textContent = '✓ Ubicación seleccionada y lista para guardar.';
   statusEl.className = 'addr-status ok';
 }, geocodeReportAddress);
+
+/* ---------------- Selector rápido de ciudad (ventana flotante "Ciudad") ---------------- */
+/* A pedido del usuario: una ventana flotante para saltar rápido entre ciudades sin tener
+   que escribir/buscar la dirección. Orden pedido primero (Eje Cafetero + Chocó), y luego
+   el resto de capitales de departamento de Colombia en orden alfabético. */
+const CIUDADES_PRIORIDAD = [
+  { nombre: 'Pereira', lat: 4.8087, lng: -75.6906, zoom: 13 },
+  { nombre: 'Manizales', lat: 5.0689, lng: -75.5174, zoom: 13 },
+  { nombre: 'Armenia', lat: 4.5339, lng: -75.6811, zoom: 13 },
+  { nombre: 'Quimbaya', lat: 4.6255, lng: -75.7627, zoom: 14 },
+  { nombre: 'Salento', lat: 4.6378, lng: -75.5703, zoom: 14 },
+  { nombre: 'Chocó', lat: 5.6947, lng: -76.6584, zoom: 12 }
+];
+const CIUDADES_RESTO = [
+  { nombre: 'Arauca', lat: 7.0847, lng: -70.7591 },
+  { nombre: 'Barranquilla', lat: 10.9639, lng: -74.7964 },
+  { nombre: 'Bogotá', lat: 4.7110, lng: -74.0721 },
+  { nombre: 'Bucaramanga', lat: 7.1193, lng: -73.1227 },
+  { nombre: 'Cali', lat: 3.4516, lng: -76.5320 },
+  { nombre: 'Cartagena', lat: 10.3910, lng: -75.4794 },
+  { nombre: 'Cúcuta', lat: 7.8939, lng: -72.5078 },
+  { nombre: 'Florencia', lat: 1.6144, lng: -75.6062 },
+  { nombre: 'Ibagué', lat: 4.4389, lng: -75.2322 },
+  { nombre: 'Inírida', lat: 3.8653, lng: -67.9239 },
+  { nombre: 'Leticia', lat: -4.2153, lng: -69.9406 },
+  { nombre: 'Medellín', lat: 6.2442, lng: -75.5812 },
+  { nombre: 'Mitú', lat: 1.1983, lng: -70.1733 },
+  { nombre: 'Mocoa', lat: 1.1519, lng: -76.6469 },
+  { nombre: 'Montería', lat: 8.7479, lng: -75.8814 },
+  { nombre: 'Neiva', lat: 2.9273, lng: -75.2819 },
+  { nombre: 'Pasto', lat: 1.2136, lng: -77.2811 },
+  { nombre: 'Popayán', lat: 2.4448, lng: -76.6147 },
+  { nombre: 'Puerto Carreño', lat: 6.1891, lng: -67.4859 },
+  { nombre: 'Quibdó', lat: 5.6947, lng: -76.6584 },
+  { nombre: 'Riohacha', lat: 11.5444, lng: -72.9072 },
+  { nombre: 'San Andrés', lat: 12.5847, lng: -81.7006 },
+  { nombre: 'San José del Guaviare', lat: 2.5701, lng: -72.6389 },
+  { nombre: 'Santa Marta', lat: 11.2408, lng: -74.1990 },
+  { nombre: 'Sincelejo', lat: 9.3047, lng: -75.3978 },
+  { nombre: 'Tunja', lat: 5.5353, lng: -73.3678 },
+  { nombre: 'Valledupar', lat: 10.4631, lng: -73.2532 },
+  { nombre: 'Villavicencio', lat: 4.1420, lng: -73.6266 },
+  { nombre: 'Yopal', lat: 5.3378, lng: -72.3959 }
+].map(c => ({ ...c, zoom: 13 }));
+
+function renderCityList(filterText){
+  const list = document.getElementById('city-list');
+  const q = (filterText || '').trim().toLowerCase();
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const matches = c => !q || norm(c.nombre).includes(norm(q));
+  const priorityMatches = CIUDADES_PRIORIDAD.filter(matches);
+  const restoMatches = CIUDADES_RESTO.filter(matches);
+
+  if(!priorityMatches.length && !restoMatches.length){
+    list.innerHTML = '<div class="city-empty">Sin resultados.</div>';
+    return;
+  }
+
+  let html = '';
+  if(priorityMatches.length){
+    html += priorityMatches.map(c =>
+      `<div class="city-item priority" data-lat="${c.lat}" data-lng="${c.lng}" data-zoom="${c.zoom}">${c.nombre}</div>`
+    ).join('');
+  }
+  if(restoMatches.length){
+    if(priorityMatches.length) html += '<div class="city-divider">Resto del país</div>';
+    html += restoMatches.map(c =>
+      `<div class="city-item" data-lat="${c.lat}" data-lng="${c.lng}" data-zoom="${c.zoom}">${c.nombre}</div>`
+    ).join('');
+  }
+  list.innerHTML = html;
+
+  list.querySelectorAll('.city-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng), zoom = parseInt(el.dataset.zoom, 10);
+      map.setCenter({lat, lng});
+      map.setZoom(zoom);
+      closeCityPanel();
+    });
+  });
+}
+
+function toggleCityPanel(){
+  const panel = document.getElementById('city-panel');
+  if(panel.classList.contains('show')){
+    closeCityPanel();
+  }else{
+    renderCityList('');
+    document.getElementById('city-filter').value = '';
+    panel.classList.add('show');
+    setTimeout(() => document.getElementById('city-filter').focus(), 0);
+  }
+}
+
+function closeCityPanel(){
+  document.getElementById('city-panel').classList.remove('show');
+}
+
+document.getElementById('city-filter').addEventListener('input', (e) => {
+  renderCityList(e.target.value);
+});
+
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.city-select-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    closeCityPanel();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape'){
+    closeCityPanel();
+  }
+});
 
 /* Oculta el modal temporalmente para permitir marcar el pin con un clic en el mapa
    (mismo mecanismo de siempre: pinPlacementMode + listener de clic del mapa de arriba),
