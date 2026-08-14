@@ -43,6 +43,7 @@
     --kits-aseo:#0d9488;
     --colchones-carpas:#4338ca;
     --socorristas:#ea580c;
+    --cierre:#b91c1c;
     --radius:10px;
   }
   *{box-sizing:border-box;}
@@ -164,6 +165,56 @@
     color:var(--text-dim);text-transform:uppercase;
   }
   .city-empty{padding:10px 14px;font-size:12px;color:var(--text-dim);}
+
+  /* ---------- Calles cerradas (capa aparte, independiente de las pestañas) ---------- */
+  .closures-select-wrap{position:relative;}
+  #closures-btn{
+    display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;
+    border:1px solid var(--border);background:var(--panel-2);color:var(--text);
+    cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;
+  }
+  #closures-btn:hover{background:var(--border);}
+  #closures-btn svg{flex:none;color:var(--cierre);}
+  .closures-badge{
+    display:none;align-items:center;justify-content:center;min-width:16px;height:16px;
+    padding:0 5px;border-radius:10px;background:var(--cierre);color:#ffffff;
+    font-size:10px;font-weight:700;line-height:16px;
+  }
+  .closures-panel{
+    position:absolute;top:calc(100% + 6px);left:0;z-index:70;
+    width:300px;max-height:400px;display:none;flex-direction:column;
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);overflow:hidden;
+  }
+  .closures-panel.show{display:flex;}
+  .closures-panel-header{
+    padding:10px 12px;font-size:13px;font-weight:700;color:var(--text);
+    border-bottom:1px solid var(--border);background:var(--panel-2);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .closures-add-btn{
+    border:none;background:var(--accent);color:var(--accent-text);font-weight:700;
+    font-size:11px;padding:5px 9px;border-radius:14px;cursor:pointer;white-space:nowrap;
+  }
+  .closures-add-btn:hover{background:var(--accent-2);}
+  .closures-panel-list{overflow-y:auto;flex:1;padding:6px;}
+  .closures-empty{padding:14px 10px;font-size:12px;color:var(--text-dim);text-align:center;}
+  .closure-item{
+    background:var(--panel-2);border:1px solid var(--border);border-left:4px solid var(--cierre);
+    border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;
+  }
+  .closure-item:hover{border-color:var(--accent);}
+  .closure-item .top{display:flex;align-items:center;gap:6px;}
+  .closure-item .addr{font-size:12px;font-weight:600;color:var(--text);}
+  .closure-item .motivo{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .closure-item .meta{font-size:10px;color:var(--text-dim);margin-top:3px;}
+  .closure-item .actions{display:flex;gap:6px;margin-top:6px;}
+  .closure-item .actions button{
+    flex:1;padding:5px 6px;border-radius:6px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text);font-size:10px;font-weight:600;cursor:pointer;
+  }
+  .closure-item .actions button:hover{background:var(--border);}
+
   #search-box input{
     padding:8px 10px;border-radius:8px;border:1px solid var(--border);
     background:var(--panel-2);color:var(--text);font-size:13px;width:100%;
@@ -396,6 +447,20 @@
         <div class="city-list" id="city-list"></div>
       </div>
     </div>
+    <div class="closures-select-wrap">
+      <button id="closures-btn" type="button" onclick="toggleClosuresPanel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Calles cerradas
+        <span class="closures-badge" id="closures-badge">0</span>
+      </button>
+      <div class="closures-panel" id="closures-panel">
+        <div class="closures-panel-header">
+          Calles cerradas
+          <button type="button" class="closures-add-btn" onclick="openNewClosureModal()">＋ Reportar cierre</button>
+        </div>
+        <div class="closures-panel-list" id="closures-panel-list"></div>
+      </div>
+    </div>
     <div class="stats">
       <div class="stat"><span class="dot red"></span> <span id="count-pendiente">0</span> pendientes</div>
       <div class="stat"><span class="dot blue"></span> <span id="count-atencion">0</span> en atención</div>
@@ -533,6 +598,84 @@
   </div>
 </div>
 
+<!-- ============ MODAL: nueva/editar calle cerrada ============ -->
+<div class="modal-overlay" id="closure-modal-overlay">
+  <div class="modal">
+    <h2 id="closure-modal-title">Reportar calle cerrada</h2>
+    <div class="sub">Marca una zona con vía cerrada. Se sincroniza al instante con todo el equipo.</div>
+
+    <div class="field">
+      <label>Dirección / tramo de la vía</label>
+      <div class="addr-row">
+        <div class="addr-input-wrap">
+          <input id="f-cierre-direccion" type="text" placeholder="Ej: Av. 30 de Agosto con Cra 9" autocomplete="off" />
+          <div id="cierre-addr-suggestions" class="suggestions-dropdown"></div>
+        </div>
+        <button type="button" class="addr-btn" onclick="geocodeClosureAddress()">Ubicar</button>
+      </div>
+      <div id="cierre-addr-status" class="addr-status"></div>
+      <div class="addr-manual-link" onclick="pickClosureLocationOnMap()">O ubicar manualmente en el mapa</div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Motivo del cierre</label>
+        <select id="f-cierre-motivo">
+          <option value="escombros">Escombros / derrumbe</option>
+          <option value="via_danada">Vía dañada / socavón</option>
+          <option value="inundacion">Inundación</option>
+          <option value="accidente">Accidente / emergencia</option>
+          <option value="orden_autoridad">Orden de las autoridades</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Urgencia</label>
+        <select id="f-cierre-urgencia">
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Tamaño aproximado del área afectada</label>
+      <select id="f-cierre-radio">
+        <option value="100">Puntual (un tramo corto, ~100 m)</option>
+        <option value="250" selected>Varias cuadras (~250 m)</option>
+        <option value="500">Un sector (~500 m)</option>
+        <option value="1000">Un barrio (~1 km)</option>
+        <option value="2000">Zona extensa (~2 km)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Descripción</label>
+      <textarea id="f-cierre-descripcion" placeholder="Detalles del cierre…"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Contacto (teléfono, opcional)</label>
+      <input id="f-cierre-contacto" type="text" placeholder="Ej: 300 123 4567" />
+    </div>
+
+    <div class="field">
+      <label>Estado</label>
+      <select id="f-cierre-estado">
+        <option value="activo">Cerrada</option>
+        <option value="reabierta">Reabierta</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeClosureModal()">Cancelar</button>
+      <button class="btn danger" id="btn-delete-cierre" style="display:none;" onclick="deleteCurrentClosure()">Eliminar</button>
+      <button class="btn primary" onclick="saveClosure()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =========================================================================
    CONFIGURACIÓN DE FIREBASE
@@ -568,6 +711,7 @@ function initFirebase(){
     auth.signInAnonymously().then(()=>{
       firebaseReady = true;
       listenReports();
+      listenClosures();
     }).catch(err=>{
       console.error("Error de autenticación Firebase:", err);
       showConfigWarning("Error conectando con Firebase: " + err.message);
@@ -648,6 +792,16 @@ let localReports = [];   // usado si Firebase no está configurado
 let localIdCounter = 1;
 let currentTipoTab = 'general';   // tipo de ayuda activo en la barra de pestañas ('general' = todos)
 
+/* ---------------- Calles cerradas (capa aparte, independiente de las pestañas) ---------------- */
+let closures = {};              // id -> data
+let closureCircles = {};        // id -> google.maps.Circle (perímetro afectado)
+let closureMarkers = {};        // id -> google.maps.Marker (ícono en el centro)
+let editingClosureId = null;
+let pendingClosureLatLng = null;
+let closurePinPlacementMode = false;
+let localClosures = [];         // usado si Firebase no está configurado
+let localClosureIdCounter = 1;
+
 map.addListener('click', (e)=>{
   if(pinPlacementMode){
     pendingLatLng = {lat: e.latLng.lat(), lng: e.latLng.lng()};
@@ -655,6 +809,16 @@ map.addListener('click', (e)=>{
     document.getElementById('pin-hint').style.display = 'none';
     document.getElementById('modal-overlay').classList.add('show');
     const statusEl = document.getElementById('addr-status');
+    if(statusEl){
+      statusEl.textContent = '📍 Ubicación marcada manualmente en el mapa.';
+      statusEl.className = 'addr-status ok';
+    }
+  }else if(closurePinPlacementMode){
+    pendingClosureLatLng = {lat: e.latLng.lat(), lng: e.latLng.lng()};
+    closurePinPlacementMode = false;
+    document.getElementById('pin-hint').style.display = 'none';
+    document.getElementById('closure-modal-overlay').classList.add('show');
+    const statusEl = document.getElementById('cierre-addr-status');
     if(statusEl){
       statusEl.textContent = '📍 Ubicación marcada manualmente en el mapa.';
       statusEl.className = 'addr-status ok';
@@ -835,6 +999,50 @@ setupAddressAutocomplete('f-direccion', 'addr-suggestions', (r)=>{
   statusEl.className = 'addr-status ok';
 }, geocodeReportAddress);
 
+/* ---------------- Ubicar el cierre de vía escribiendo la dirección (mismo mecanismo
+   de autocompletado ya usado arriba para los reportes de ayuda) ---------------- */
+async function geocodeClosureAddress(){
+  const input = document.getElementById('f-cierre-direccion');
+  const statusEl = document.getElementById('cierre-addr-status');
+  const q = input.value.trim();
+  if(!q){
+    statusEl.textContent = 'Escribe primero una dirección o referencia.';
+    statusEl.className = 'addr-status err';
+    return;
+  }
+  statusEl.textContent = 'Buscando ubicación…';
+  statusEl.className = 'addr-status';
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q + ', Pereira, Risaralda, Colombia')}`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    if(data && data.length){
+      const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+      pendingClosureLatLng = {lat, lng};
+      map.setCenter({lat, lng});
+      map.setZoom(15);
+      statusEl.textContent = '✓ Ubicación encontrada y lista para guardar.';
+      statusEl.className = 'addr-status ok';
+    }else{
+      statusEl.textContent = 'No se encontró esa dirección. Intenta ser más específico (ej: nombre del barrio) o usa "ubicar manualmente en el mapa".';
+      statusEl.className = 'addr-status err';
+    }
+  }catch(e){
+    statusEl.textContent = 'No se pudo buscar la dirección en este momento. Intenta de nuevo o ubica manualmente en el mapa.';
+    statusEl.className = 'addr-status err';
+  }
+}
+
+setupAddressAutocomplete('f-cierre-direccion', 'cierre-addr-suggestions', (r)=>{
+  const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+  pendingClosureLatLng = {lat, lng};
+  map.setCenter({lat, lng});
+  map.setZoom(15);
+  const statusEl = document.getElementById('cierre-addr-status');
+  statusEl.textContent = '✓ Ubicación seleccionada y lista para guardar.';
+  statusEl.className = 'addr-status ok';
+}, geocodeClosureAddress);
+
 /* ---------------- Selector rápido de ciudad (ventana flotante "Ciudad") ---------------- */
 /* A pedido del usuario: una ventana flotante para saltar rápido entre ciudades sin tener
    que escribir/buscar la dirección. Orden pedido primero (Eje Cafetero + Chocó), y luego
@@ -941,13 +1149,319 @@ document.addEventListener('click', (e) => {
   if(wrap && !wrap.contains(e.target)){
     closeCityPanel();
   }
+  const closuresWrap = document.querySelector('.closures-select-wrap');
+  if(closuresWrap && !closuresWrap.contains(e.target)){
+    closeClosuresPanel();
+  }
 });
 
 document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape'){
     closeCityPanel();
+    closeClosuresPanel();
   }
 });
+
+/* ---------------- Calles cerradas: capa aparte, independiente de las pestañas de
+   tipos de ayuda (a pedido del usuario: "dame la opcion de poner las calles que
+   estan cerradas"). No cuenta en las estadísticas de tipos de ayuda, no aparece
+   en "Panorama general" ni en ninguna pestaña — es una colección propia
+   (`cierres_via` en Firestore) que se muestra siempre sobre el mapa como un
+   círculo (perímetro afectado, ya que a menudo los cierres cubren zonas amplias
+   y no solo un punto) más un ícono de advertencia en el centro. ---------------- */
+const CIERRE_MOTIVO_LABELS = {
+  escombros: 'Escombros / derrumbe',
+  via_danada: 'Vía dañada / socavón',
+  inundacion: 'Inundación',
+  accidente: 'Accidente / emergencia',
+  orden_autoridad: 'Orden de las autoridades',
+  otro: 'Otro motivo'
+};
+
+function makeClosureIcon(){
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">
+    <circle cx="13" cy="13" r="11" fill="${cssVar('--cierre')}" stroke="#1a1a1a" stroke-width="2"/>
+    <path d="M13 6.5l6.2 11.5H6.8z" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+    <rect x="12.3" y="10.8" width="1.4" height="4" rx="0.6" fill="#ffffff"/>
+    <circle cx="13" cy="16.3" r="0.9" fill="#ffffff"/>
+  </svg>`;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(26, 26),
+    anchor: new google.maps.Point(13, 13)
+  };
+}
+
+function removeClosureOverlays(id){
+  if(closureCircles[id]){ closureCircles[id].setMap(null); delete closureCircles[id]; }
+  if(closureMarkers[id]){ closureMarkers[id].setMap(null); delete closureMarkers[id]; }
+}
+
+function upsertClosure(id, c){
+  closures[id] = c;
+  const isActive = c.estado !== 'reabierta';
+
+  if(!isActive){
+    removeClosureOverlays(id);
+    renderClosuresPanelList();
+    updateClosuresBadge();
+    return;
+  }
+
+  const center = {lat: c.lat, lng: c.lng};
+  if(closureCircles[id]){
+    closureCircles[id].setCenter(center);
+    closureCircles[id].setRadius(c.radio || 250);
+  }else{
+    closureCircles[id] = new google.maps.Circle({
+      map,
+      center,
+      radius: c.radio || 250,
+      strokeColor: cssVar('--cierre'),
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: cssVar('--cierre'),
+      fillOpacity: 0.15,
+      clickable: true
+    });
+    closureCircles[id].addListener('click', ()=> openEditClosureModal(id));
+  }
+
+  if(closureMarkers[id]){
+    closureMarkers[id].setPosition(center);
+  }else{
+    const m = new google.maps.Marker({ position: center, map, icon: makeClosureIcon(), zIndex: 500 });
+    m.addListener('click', ()=> openEditClosureModal(id));
+    closureMarkers[id] = m;
+  }
+
+  renderClosuresPanelList();
+  updateClosuresBadge();
+}
+
+function removeClosure(id){
+  removeClosureOverlays(id);
+  delete closures[id];
+  renderClosuresPanelList();
+  updateClosuresBadge();
+}
+
+function updateClosuresBadge(){
+  const activos = Object.values(closures).filter(c => c.estado !== 'reabierta').length;
+  const badge = document.getElementById('closures-badge');
+  badge.textContent = activos;
+  badge.style.display = activos > 0 ? 'inline-flex' : 'none';
+}
+
+function renderClosuresPanelList(){
+  const list = document.getElementById('closures-panel-list');
+  if(!list) return;
+  const activos = Object.entries(closures)
+    .filter(([id, c]) => c.estado !== 'reabierta')
+    .sort((a,b) => (b[1].timestamp||0) - (a[1].timestamp||0));
+  if(!activos.length){
+    list.innerHTML = '<div class="closures-empty">No hay calles cerradas reportadas.</div>';
+    return;
+  }
+  list.innerHTML = activos.map(([id, c]) => `
+    <div class="closure-item" data-id="${id}">
+      <div class="top">
+        <span class="dot ${c.urgencia === 'alta' ? 'red' : c.urgencia === 'media' ? 'orange' : 'blue'}"></span>
+        <span class="addr">${c.direccion || 'Sin dirección'}</span>
+      </div>
+      <div class="motivo">${CIERRE_MOTIVO_LABELS[c.motivo] || c.motivo || ''}</div>
+      <div class="meta">${timeAgo(c.actualizado || c.timestamp)}</div>
+      <div class="actions">
+        <button type="button" data-action="center">Ver en mapa</button>
+        <button type="button" data-action="reopen">Marcar reabierta</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.closure-item').forEach(el=>{
+    const id = el.dataset.id;
+    el.addEventListener('click', ()=> openEditClosureModal(id));
+    el.querySelector('[data-action="center"]').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      centerOnClosure(id);
+    });
+    el.querySelector('[data-action="reopen"]').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      marcarCierreReabierta(id);
+    });
+  });
+}
+
+function centerOnClosure(id){
+  const c = closures[id];
+  if(!c) return;
+  map.setCenter({lat: c.lat, lng: c.lng});
+  map.setZoom(16);
+  closeClosuresPanel();
+}
+
+function toggleClosuresPanel(){
+  const panel = document.getElementById('closures-panel');
+  if(panel.classList.contains('show')){
+    closeClosuresPanel();
+  }else{
+    renderClosuresPanelList();
+    panel.classList.add('show');
+  }
+}
+function closeClosuresPanel(){
+  const panel = document.getElementById('closures-panel');
+  if(panel) panel.classList.remove('show');
+}
+
+function openNewClosureModal(){
+  closeClosuresPanel();
+  editingClosureId = null;
+  document.getElementById('closure-modal-title').textContent = 'Reportar calle cerrada';
+  document.getElementById('btn-delete-cierre').style.display = 'none';
+  clearClosureForm();
+  pendingClosureLatLng = null;
+  closurePinPlacementMode = false;
+  document.getElementById('pin-hint').style.display = 'none';
+  document.getElementById('closure-modal-overlay').classList.add('show');
+}
+
+function openEditClosureModal(id){
+  closeClosuresPanel();
+  const c = closures[id];
+  if(!c) return;
+  editingClosureId = id;
+  document.getElementById('closure-modal-title').textContent = 'Editar calle cerrada';
+  document.getElementById('btn-delete-cierre').style.display = 'block';
+  document.getElementById('f-cierre-direccion').value = c.direccion || '';
+  document.getElementById('f-cierre-motivo').value = c.motivo || 'escombros';
+  document.getElementById('f-cierre-urgencia').value = c.urgencia || 'media';
+  document.getElementById('f-cierre-radio').value = String(c.radio || 250);
+  document.getElementById('f-cierre-descripcion').value = c.descripcion || '';
+  document.getElementById('f-cierre-contacto').value = c.contacto || '';
+  document.getElementById('f-cierre-estado').value = c.estado || 'activo';
+  document.getElementById('cierre-addr-status').textContent = '';
+  document.getElementById('cierre-addr-status').className = 'addr-status';
+  pendingClosureLatLng = {lat: c.lat, lng: c.lng};
+  document.getElementById('closure-modal-overlay').classList.add('show');
+}
+
+function clearClosureForm(){
+  document.getElementById('f-cierre-direccion').value = '';
+  document.getElementById('f-cierre-motivo').value = 'escombros';
+  document.getElementById('f-cierre-urgencia').value = 'media';
+  document.getElementById('f-cierre-radio').value = '250';
+  document.getElementById('f-cierre-descripcion').value = '';
+  document.getElementById('f-cierre-contacto').value = '';
+  document.getElementById('f-cierre-estado').value = 'activo';
+  document.getElementById('cierre-addr-status').textContent = '';
+  document.getElementById('cierre-addr-status').className = 'addr-status';
+}
+
+function closeClosureModal(){
+  document.getElementById('closure-modal-overlay').classList.remove('show');
+  closurePinPlacementMode = false;
+  document.getElementById('pin-hint').style.display = 'none';
+  editingClosureId = null;
+  pendingClosureLatLng = null;
+}
+
+function pickClosureLocationOnMap(){
+  document.getElementById('closure-modal-overlay').classList.remove('show');
+  closurePinPlacementMode = true;
+  document.getElementById('pin-hint').textContent = 'Haz clic en el mapa para ubicar el cierre';
+  document.getElementById('pin-hint').style.display = 'block';
+}
+
+async function saveClosure(){
+  if(!pendingClosureLatLng){
+    alert("Falta ubicar el cierre: escribe la dirección arriba y presiona \"Ubicar\", o usa \"ubicar manualmente en el mapa\".");
+    return;
+  }
+  const closure = {
+    direccion: document.getElementById('f-cierre-direccion').value.trim(),
+    motivo: document.getElementById('f-cierre-motivo').value,
+    urgencia: document.getElementById('f-cierre-urgencia').value,
+    radio: parseInt(document.getElementById('f-cierre-radio').value) || 250,
+    descripcion: document.getElementById('f-cierre-descripcion').value.trim(),
+    contacto: document.getElementById('f-cierre-contacto').value.trim(),
+    estado: document.getElementById('f-cierre-estado').value,
+    lat: pendingClosureLatLng.lat,
+    lng: pendingClosureLatLng.lng,
+    reportadoPor: window.currentUserName || 'Anónimo',
+    timestamp: editingClosureId ? (closures[editingClosureId]?.timestamp || Date.now()) : Date.now(),
+    actualizado: Date.now()
+  };
+
+  if(firebaseReady && db){
+    try{
+      if(editingClosureId){
+        await db.collection('cierres_via').doc(editingClosureId).set(closure);
+      }else{
+        await db.collection('cierres_via').add(closure);
+      }
+    }catch(e){
+      alert("Error guardando en Firebase: " + e.message);
+      return;
+    }
+  }else{
+    if(editingClosureId){
+      upsertClosure(editingClosureId, closure);
+    }else{
+      const id = 'local-cierre-' + (localClosureIdCounter++);
+      upsertClosure(id, closure);
+    }
+  }
+  closeClosureModal();
+}
+
+async function marcarCierreReabierta(id){
+  const c = closures[id];
+  if(!c) return;
+  const actualizado = Date.now();
+  if(firebaseReady && db){
+    try{
+      await db.collection('cierres_via').doc(id).update({ estado: 'reabierta', actualizado });
+    }catch(e){
+      alert('Error al actualizar: ' + e.message);
+      return;
+    }
+  }else{
+    c.estado = 'reabierta';
+    c.actualizado = actualizado;
+    upsertClosure(id, c);
+  }
+}
+
+async function deleteCurrentClosure(){
+  if(!editingClosureId) return;
+  if(!confirm("¿Eliminar este reporte de calle cerrada?")) return;
+  if(firebaseReady && db){
+    try{
+      await db.collection('cierres_via').doc(editingClosureId).delete();
+    }catch(e){
+      alert("Error eliminando: " + e.message);
+      return;
+    }
+  }else{
+    removeClosure(editingClosureId);
+  }
+  closeClosureModal();
+}
+
+function listenClosures(){
+  db.collection('cierres_via').onSnapshot(snapshot=>{
+    snapshot.docChanges().forEach(change=>{
+      const id = change.doc.id;
+      if(change.type === 'removed'){
+        removeClosure(id);
+      }else{
+        upsertClosure(id, change.doc.data());
+      }
+    });
+  }, err=>{
+    console.error("Error escuchando cierres de vía:", err);
+  });
+}
 
 /* Oculta el modal temporalmente para permitir marcar el pin con un clic en el mapa
    (mismo mecanismo de siempre: pinPlacementMode + listener de clic del mapa de arriba),
@@ -955,6 +1469,7 @@ document.addEventListener('keydown', (e) => {
 function pickLocationOnMap(){
   document.getElementById('modal-overlay').classList.remove('show');
   pinPlacementMode = true;
+  document.getElementById('pin-hint').textContent = 'Haz clic en el mapa para ubicar el reporte';
   document.getElementById('pin-hint').style.display = 'block';
 }
 
