@@ -81,7 +81,7 @@
   #gate .err{color:var(--red);font-size:13px;margin-top:10px;min-height:16px;}
 
   /* ---------- Layout principal ---------- */
-  #app{display:none;height:100%;flex-direction:column;}
+  #app, #app-negocios{display:none;height:100%;flex-direction:column;}
   header{
     display:flex;align-items:center;gap:16px;
     padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--border);
@@ -96,6 +96,7 @@
   }
   .dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;}
   .dot.red{background:var(--red);} .dot.orange{background:var(--orange);}
+  .dot.gray{background:var(--text-dim);}
   .dot.blue{background:var(--blue);} .dot.green{background:var(--green);}
 
   /* ---------- Barra de tipos de ayuda ---------- */
@@ -132,12 +133,12 @@
 
   /* ---------- Selector rápido de ciudad (ventana flotante) ---------- */
   .city-select-wrap{position:relative;}
-  #city-btn{
+  #city-btn, #negocios-nav-btn, #back-ayuda-btn{
     display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;
     border:1px solid var(--border);background:var(--panel-2);color:var(--text);
-    cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;
+    cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;text-decoration:none;
   }
-  #city-btn:hover{background:var(--border);}
+  #city-btn:hover, #negocios-nav-btn:hover, #back-ayuda-btn:hover{background:var(--border);}
   #city-btn svg{flex:none;}
   .city-panel{
     position:absolute;top:calc(100% + 6px);left:0;z-index:70;
@@ -227,13 +228,13 @@
   #search-box button:hover{background:var(--border);}
 
   main{display:flex;flex:1;min-height:0;}
-  #map{flex:1;height:100%;background:#eef0f1;}
+  #map, #map-negocios{flex:1;height:100%;background:#eef0f1;}
 
-  #sidebar{
+  #sidebar, #negocio-sidebar{
     width:340px;min-width:340px;background:var(--panel);border-left:1px solid var(--border);
     display:flex;flex-direction:column;
   }
-  #filters{
+  #filters, #negocio-filters{
     padding:10px 12px;border-bottom:1px solid var(--border);
     display:flex;gap:6px;flex-wrap:wrap;
   }
@@ -245,7 +246,7 @@
   #categoria-chips{display:none;}
   #categoria-chips.show{display:contents;}
 
-  #report-list{flex:1;overflow-y:auto;padding:8px;}
+  #report-list, #negocio-list{flex:1;overflow-y:auto;padding:8px;}
   .report-card{
     background:var(--panel-2);border:1px solid var(--border);border-left:4px solid var(--red);
     border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;
@@ -263,15 +264,15 @@
     font-size:10px;color:var(--text-dim);margin-top:4px;display:flex;justify-content:space-between;
     opacity:.85;
   }
-  #empty-msg{padding:24px 16px;color:var(--text-dim);font-size:13px;text-align:center;}
+  #empty-msg, #negocio-empty-msg{padding:24px 16px;color:var(--text-dim);font-size:13px;text-align:center;}
 
-  #fab{
+  #fab, #negocio-fab{
     position:fixed;bottom:24px;right:24px;
     background:var(--accent);color:var(--accent-text);border:none;border-radius:50px;
     padding:14px 20px;font-weight:700;font-size:14px;cursor:pointer;
     box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:1200;
   }
-  #fab:hover{background:var(--accent-2);}
+  #fab:hover, #negocio-fab:hover{background:var(--accent-2);}
 
   /* ---------- Modal ---------- */
   .modal-overlay{
@@ -462,6 +463,10 @@
         <div class="closures-panel-list" id="closures-panel-list"></div>
       </div>
     </div>
+    <button id="negocios-nav-btn" type="button" onclick="showView('negocios')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+      Negocios
+    </button>
     <div class="stats">
       <div class="stat"><span class="dot red"></span> <span id="count-pendiente">0</span> pendientes</div>
       <div class="stat"><span class="dot blue"></span> <span id="count-atencion">0</span> en atención</div>
@@ -502,8 +507,46 @@
   </main>
 
   <button id="fab" onclick="openNewReportModal()">＋ Reportar zona</button>
-  <div class="pin-hint" id="pin-hint">Haz clic en el mapa para ubicar el reporte</div>
 </div>
+
+<!-- ============ APP: NEGOCIOS QUE ATIENDEN ============ -->
+<div id="app-negocios">
+  <header>
+    <h1><span>Negocios</span> — Pereira</h1>
+    <button id="back-ayuda-btn" type="button" onclick="showView('ayuda')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Ayuda y necesidades
+    </button>
+    <div class="stats">
+      <div class="stat"><span class="dot green"></span> <span id="count-negocio-abierto">0</span> abiertos</div>
+      <div class="stat"><span class="dot orange"></span> <span id="count-negocio-limitada">0</span> capacidad limitada</div>
+      <div class="stat"><span class="dot gray"></span> <span id="count-negocio-cerrado">0</span> cerrados</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="map-negocios"></div>
+    <aside id="negocio-sidebar">
+      <div id="negocio-filters">
+        <div class="chip active" data-filter="n-estado" data-value="all">Todos</div>
+        <div class="chip" data-filter="n-estado" data-value="abierto">Abiertos</div>
+        <div class="chip" data-filter="n-estado" data-value="limitada">Capacidad limitada</div>
+        <div class="chip" data-filter="n-estado" data-value="cerrado">Cerrados</div>
+        <div class="chip" data-filter="n-tipo" data-value="restaurante">Restaurantes</div>
+        <div class="chip" data-filter="n-tipo" data-value="tienda">Tiendas</div>
+        <div class="chip" data-filter="n-tipo" data-value="farmacia">Farmacias</div>
+        <div class="chip" data-filter="n-tipo" data-value="ferreteria">Ferreterías</div>
+        <div class="chip" data-filter="n-tipo" data-value="panaderia">Panaderías</div>
+        <div class="chip" data-filter="n-tipo" data-value="otro">Otros</div>
+      </div>
+      <div id="negocio-list"></div>
+    </aside>
+  </main>
+
+  <button id="negocio-fab" onclick="openNewNegocioModal()">＋ Agregar negocio</button>
+</div>
+
+<div class="pin-hint" id="pin-hint">Haz clic en el mapa para ubicar el reporte</div>
 
 <!-- ============ MODAL: nuevo/editar reporte ============ -->
 <div class="modal-overlay" id="modal-overlay">
@@ -678,6 +721,70 @@
   </div>
 </div>
 
+<!-- ============ MODAL: nuevo/editar negocio ============ -->
+<div class="modal-overlay" id="negocio-modal-overlay">
+  <div class="modal">
+    <h2 id="negocio-modal-title">Nuevo negocio</h2>
+    <div class="sub">Restaurantes, tiendas y demás negocios que están atendiendo durante la contingencia. Se sincroniza al instante con todo el equipo.</div>
+
+    <div class="field">
+      <label>Nombre del negocio</label>
+      <input id="f-negocio-nombre" type="text" placeholder="Ej: Panadería La Esneda" />
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Tipo de negocio</label>
+        <select id="f-negocio-tipo">
+          <option value="restaurante">Restaurante</option>
+          <option value="tienda">Tienda / Mercado</option>
+          <option value="farmacia">Farmacia</option>
+          <option value="ferreteria">Ferretería</option>
+          <option value="panaderia">Panadería</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Disponibilidad</label>
+        <select id="f-negocio-estado">
+          <option value="abierto">Abierto</option>
+          <option value="limitada">Capacidad limitada</option>
+          <option value="cerrado">Cerrado</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Qué tienen disponible?</label>
+      <textarea id="f-negocio-disponibilidad" placeholder="Ej: venta de mercado, acepta Nequi y efectivo, domicilios limitados"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Dirección / referencia del lugar</label>
+      <div class="addr-row">
+        <div class="addr-input-wrap">
+          <input id="f-negocio-direccion" type="text" placeholder="Ej: Barrio La Esneda, cra 10 # 5-20" autocomplete="off" />
+          <div id="negocio-addr-suggestions" class="suggestions-dropdown"></div>
+        </div>
+        <button type="button" class="addr-btn" onclick="geocodeNegocioAddress()">Ubicar</button>
+      </div>
+      <div id="negocio-addr-status" class="addr-status"></div>
+      <div class="addr-manual-link" onclick="pickNegocioLocationOnMap()">O ubicar manualmente en el mapa</div>
+    </div>
+
+    <div class="field">
+      <label>Contacto (teléfono, opcional)</label>
+      <input id="f-negocio-contacto" type="text" placeholder="Ej: 300 123 4567" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeNegocioModal()">Cancelar</button>
+      <button class="btn danger" id="btn-delete-negocio" style="display:none;" onclick="deleteCurrentNegocio()">Eliminar</button>
+      <button class="btn primary" onclick="saveNegocio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =========================================================================
    CONFIGURACIÓN DE FIREBASE
@@ -714,6 +821,7 @@ function initFirebase(){
       firebaseReady = true;
       listenReports();
       listenClosures();
+      listenNegocios();
     }).catch(err=>{
       console.error("Error de autenticación Firebase:", err);
       showConfigWarning("Error conectando con Firebase: " + err.message);
@@ -746,12 +854,52 @@ function tryEnter(){
   window.currentUserName = name;
   sessionStorage.setItem('pereira_user', name);
   document.getElementById('gate').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  setTimeout(()=>{ google.maps.event.trigger(map, 'resize'); map.setCenter({lat: PEREIRA_CENTER[0], lng: PEREIRA_CENTER[1]}); }, 100);
+  showView(detectInitialView(), false);
+  history.replaceState({view: currentView}, '', pathForView(currentView));
 }
 
 document.getElementById('gate-name').addEventListener('keydown', e=>{
   if(e.key === 'Enter') tryEnter();
+});
+
+/* ---------------- Navegación entre páginas (ayuda / negocios) ----------------
+   Segunda página ("Negocios que atienden") con URL propia y compartible, sin
+   necesidad de tocar la config del Worker: como el sitio ya sirve index.html
+   para cualquier ruta no encontrada bajo su patrón de ruta (SPA fallback),
+   basta con enrutar en el cliente según location.pathname y usar
+   history.pushState para que el botón atrás del navegador funcione. */
+const BASE_PATH = location.pathname.replace(/\/negocios\/?$/, '') || '/';
+function pathForView(view){
+  if(view === 'negocios'){
+    return BASE_PATH.endsWith('/') ? (BASE_PATH + 'negocios') : (BASE_PATH + '/negocios');
+  }
+  return BASE_PATH;
+}
+function detectInitialView(){
+  return /\/negocios\/?$/.test(location.pathname) ? 'negocios' : 'ayuda';
+}
+let currentView = 'ayuda';
+function showView(view, push){
+  if(push === undefined) push = true;
+  currentView = view;
+  const appEl = document.getElementById('app');
+  const appNegEl = document.getElementById('app-negocios');
+  if(view === 'negocios'){
+    appEl.style.display = 'none';
+    appNegEl.style.display = 'flex';
+    setTimeout(()=>{ google.maps.event.trigger(negociosMap, 'resize'); negociosMap.setCenter({lat: PEREIRA_CENTER[0], lng: PEREIRA_CENTER[1]}); }, 100);
+  }else{
+    appNegEl.style.display = 'none';
+    appEl.style.display = 'flex';
+    setTimeout(()=>{ google.maps.event.trigger(map, 'resize'); map.setCenter({lat: PEREIRA_CENTER[0], lng: PEREIRA_CENTER[1]}); }, 100);
+  }
+  if(push){
+    history.pushState({view}, '', pathForView(view));
+  }
+}
+window.addEventListener('popstate', (e)=>{
+  const view = (e.state && e.state.view) || detectInitialView();
+  showView(view, false);
 });
 
 /* ---------------- Mapa (Google Maps) ---------------- */
@@ -825,6 +973,46 @@ map.addListener('click', (e)=>{
       statusEl.textContent = '📍 Ubicación marcada manualmente en el mapa.';
       statusEl.className = 'addr-status ok';
     }
+  }
+});
+
+/* ---------------- Negocios que atienden (otra página, mapa aparte) ----------------
+   Mismo Firebase/Firestore, misma pestaña de nombre (gate), pero es una página
+   independiente (ver showView()) con su propio mapa de Google -- no comparte el
+   mapa de "ayuda y necesidades" porque conceptualmente es otra vista, no una capa
+   más sobre el mismo mapa (a diferencia de "Calles cerradas"). */
+const negociosMap = new google.maps.Map(document.getElementById('map-negocios'), {
+  center: {lat: PEREIRA_CENTER[0], lng: PEREIRA_CENTER[1]},
+  zoom: 13,
+  styles: GOGO_MAP_LIGHT_STYLE,
+  disableDefaultUI: false,
+  fullscreenControl: false,
+  streetViewControl: false,
+  mapTypeControl: false
+});
+const negocioInfoWindow = new google.maps.InfoWindow();
+
+let negocios = {};              // id -> data
+let negocioMarkers = {};        // id -> google.maps.Marker
+let negocioPopups = {};         // id -> popup html
+let editingNegocioId = null;
+let pendingNegocioLatLng = null;
+let negocioPinPlacementMode = false;
+let localNegocios = [];         // usado si Firebase no está configurado
+let localNegocioIdCounter = 1;
+let currentNegocioFilterEstado = 'all';
+let currentNegocioFilterTipo = 'all';
+
+negociosMap.addListener('click', (e)=>{
+  if(!negocioPinPlacementMode) return;
+  pendingNegocioLatLng = {lat: e.latLng.lat(), lng: e.latLng.lng()};
+  negocioPinPlacementMode = false;
+  document.getElementById('pin-hint').style.display = 'none';
+  document.getElementById('negocio-modal-overlay').classList.add('show');
+  const statusEl = document.getElementById('negocio-addr-status');
+  if(statusEl){
+    statusEl.textContent = '📍 Ubicación marcada manualmente en el mapa.';
+    statusEl.className = 'addr-status ok';
   }
 });
 
@@ -1044,6 +1232,50 @@ setupAddressAutocomplete('f-cierre-direccion', 'cierre-addr-suggestions', (r)=>{
   statusEl.textContent = '✓ Ubicación seleccionada y lista para guardar.';
   statusEl.className = 'addr-status ok';
 }, geocodeClosureAddress);
+
+/* ---------------- Ubicar el negocio escribiendo la dirección (mismo mecanismo
+   de autocompletado ya usado arriba) ---------------- */
+async function geocodeNegocioAddress(){
+  const input = document.getElementById('f-negocio-direccion');
+  const statusEl = document.getElementById('negocio-addr-status');
+  const q = input.value.trim();
+  if(!q){
+    statusEl.textContent = 'Escribe primero una dirección o referencia.';
+    statusEl.className = 'addr-status err';
+    return;
+  }
+  statusEl.textContent = 'Buscando ubicación…';
+  statusEl.className = 'addr-status';
+  try{
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q + ', Pereira, Risaralda, Colombia')}`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    if(data && data.length){
+      const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+      pendingNegocioLatLng = {lat, lng};
+      negociosMap.setCenter({lat, lng});
+      negociosMap.setZoom(16);
+      statusEl.textContent = '✓ Ubicación encontrada y lista para guardar.';
+      statusEl.className = 'addr-status ok';
+    }else{
+      statusEl.textContent = 'No se encontró esa dirección. Intenta ser más específico (ej: nombre del barrio) o usa "ubicar manualmente en el mapa".';
+      statusEl.className = 'addr-status err';
+    }
+  }catch(e){
+    statusEl.textContent = 'No se pudo buscar la dirección en este momento. Intenta de nuevo o ubica manualmente en el mapa.';
+    statusEl.className = 'addr-status err';
+  }
+}
+
+setupAddressAutocomplete('f-negocio-direccion', 'negocio-addr-suggestions', (r)=>{
+  const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+  pendingNegocioLatLng = {lat, lng};
+  negociosMap.setCenter({lat, lng});
+  negociosMap.setZoom(16);
+  const statusEl = document.getElementById('negocio-addr-status');
+  statusEl.textContent = '✓ Ubicación seleccionada y lista para guardar.';
+  statusEl.className = 'addr-status ok';
+}, geocodeNegocioAddress);
 
 /* ---------------- Selector rápido de ciudad (ventana flotante "Ciudad") ---------------- */
 /* A pedido del usuario: una ventana flotante para saltar rápido entre ciudades sin tener
@@ -1462,6 +1694,303 @@ function listenClosures(){
     });
   }, err=>{
     console.error("Error escuchando cierres de vía:", err);
+  });
+}
+
+/* ---------------- Negocios que atienden (página aparte, mismo Firestore) ---------------- */
+const NEGOCIO_TIPOS = [
+  {key:'restaurante', label:'Restaurante'},
+  {key:'tienda', label:'Tienda / Mercado'},
+  {key:'farmacia', label:'Farmacia'},
+  {key:'ferreteria', label:'Ferretería'},
+  {key:'panaderia', label:'Panadería'},
+  {key:'otro', label:'Otro'}
+];
+const NEGOCIO_ICON_PATHS = {
+  restaurante: `<rect x="9" y="5.5" width="1.3" height="7" rx="0.6" fill="#ffffff"/>
+    <rect x="11.3" y="5.5" width="1.3" height="7" rx="0.6" fill="#ffffff"/>
+    <rect x="13.6" y="5.5" width="1.3" height="7" rx="0.6" fill="#ffffff"/>
+    <path d="M9 12.5c0 1.7 1.3 3 3 3s3-1.3 3-3" fill="none" stroke="#ffffff" stroke-width="1.3"/>
+    <rect x="11.3" y="15.3" width="1.3" height="4.7" rx="0.6" fill="#ffffff"/>`,
+  tienda: `<path d="M8.2 9.3h9.6l0.9 9.4a1.4 1.4 0 0 1-1.4 1.5H8.7a1.4 1.4 0 0 1-1.4-1.5l0.9-9.4z" fill="#ffffff"/>
+    <path d="M9.8 9.3V8.1a2.2 2.2 0 0 1 4.4 0v1.2" fill="none" stroke="#ffffff" stroke-width="1.3"/>`,
+  farmacia: `<rect x="10.4" y="5.8" width="3.2" height="12.4" rx="1" fill="#ffffff"/>
+    <rect x="5.8" y="10.4" width="12.4" height="3.2" rx="1" fill="#ffffff"/>`,
+  ferreteria: `<path d="M16.8 6.4a3.6 3.6 0 0 0-4.9 4l-6 6a1.6 1.6 0 0 0 2.3 2.3l6-6a3.6 3.6 0 0 0 4-4.9l-2.1 2.1-1.6-.5-.5-1.6z" fill="#ffffff"/>`,
+  panaderia: `<path d="M6.5 14.5c0-4.7 3.3-8.3 6.5-8.3s6.5 3.6 6.5 8.3a1.9 1.9 0 0 1-1.9 1.9H8.4a1.9 1.9 0 0 1-1.9-1.9z" fill="#ffffff"/>`,
+  otro: `<path d="M6 10.4l1-4.4h10l1 4.4" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round"/>
+    <rect x="7" y="10.6" width="10" height="8.2" rx="0.6" fill="none" stroke="#ffffff" stroke-width="1.3"/>
+    <rect x="10.6" y="14" width="2.8" height="4.8" fill="#ffffff"/>`
+};
+function negocioTipoLabel(tipo){
+  const found = NEGOCIO_TIPOS.find(t=>t.key===tipo);
+  return found ? found.label : tipo;
+}
+function negocioEstadoLabel(estado){
+  return estado === 'abierto' ? 'Abierto' : estado === 'limitada' ? 'Capacidad limitada' : 'Cerrado';
+}
+function negocioColorForEstado(estado){
+  if(estado === 'abierto') return cssVar('--green');
+  if(estado === 'limitada') return cssVar('--orange');
+  return cssVar('--text-dim');
+}
+function makeNegocioIcon(estado, tipo){
+  const color = negocioColorForEstado(estado);
+  const glyph = NEGOCIO_ICON_PATHS[tipo] || NEGOCIO_ICON_PATHS.otro;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">
+    <circle cx="13" cy="13" r="11" fill="${color}" stroke="#1a1a1a" stroke-width="2"/>
+    ${glyph}
+  </svg>`;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(26, 26),
+    anchor: new google.maps.Point(13, 13)
+  };
+}
+
+/* ---------------- Render de marcador + tarjeta (negocios) ---------------- */
+function upsertNegocioMarker(id, data){
+  negocios[id] = data;
+  if(negocioMarkers[id]){
+    negocioMarkers[id].setPosition({lat: data.lat, lng: data.lng});
+    negocioMarkers[id].setIcon(makeNegocioIcon(data.estado, data.tipo));
+  }else{
+    const m = new google.maps.Marker({
+      position: {lat: data.lat, lng: data.lng},
+      map: negociosMap,
+      icon: makeNegocioIcon(data.estado, data.tipo)
+    });
+    m.addListener('click', ()=>{
+      negocioInfoWindow.setContent(negocioPopups[id] || '');
+      negocioInfoWindow.open(negociosMap, m);
+      openEditNegocioModal(id);
+    });
+    negocioMarkers[id] = m;
+  }
+  const timeInfo = `<div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Actualizado: ${timeAgo(data.actualizado || data.timestamp)}</div>`;
+  negocioPopups[id] = `<div class="map-popup"><b>${data.nombre || ''}</b><br>${negocioTipoLabel(data.tipo)} · <i>${negocioEstadoLabel(data.estado)}</i><br>${data.direccion || ''}${timeInfo}${actionButtonsHtml({contacto:data.contacto, lat:data.lat, lng:data.lng}, 'popup-actions')}</div>`;
+  renderNegocioList();
+  updateNegocioStats();
+}
+
+function removeNegocioMarker(id){
+  if(negocioMarkers[id]){ negocioMarkers[id].setMap(null); delete negocioMarkers[id]; }
+  delete negocioPopups[id];
+  delete negocios[id];
+  renderNegocioList();
+  updateNegocioStats();
+}
+
+function updateNegocioStats(){
+  const all = Object.values(negocios);
+  document.getElementById('count-negocio-abierto').textContent = all.filter(n=>n.estado==='abierto').length;
+  document.getElementById('count-negocio-limitada').textContent = all.filter(n=>n.estado==='limitada').length;
+  document.getElementById('count-negocio-cerrado').textContent = all.filter(n=>n.estado==='cerrado').length;
+}
+
+function renderNegocioList(){
+  const list = document.getElementById('negocio-list');
+  let entries = Object.entries(negocios);
+  if(currentNegocioFilterEstado !== 'all'){
+    entries = entries.filter(([id,n]) => n.estado === currentNegocioFilterEstado);
+  }
+  if(currentNegocioFilterTipo !== 'all'){
+    entries = entries.filter(([id,n]) => n.tipo === currentNegocioFilterTipo);
+  }
+  entries.sort((a,b)=> (b[1].actualizado||b[1].timestamp||0) - (a[1].actualizado||a[1].timestamp||0));
+
+  if(!entries.length){
+    list.innerHTML = '<div id="negocio-empty-msg">No hay negocios registrados en esta vista todavía.<br>Usa "＋ Agregar negocio" para agregar uno.</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(([id, n])=>{
+    const color = negocioColorForEstado(n.estado);
+    return `<div class="report-card" style="border-left-color:${color}" onclick="focusNegocio('${id}')">
+      <div class="top">
+        <div class="cat">${n.nombre || 'Sin nombre'}</div>
+        <div class="badge">${negocioEstadoLabel(n.estado)}</div>
+      </div>
+      <div class="desc">${(n.disponibilidad||'').slice(0,120)}${(n.disponibilidad||'').length>120?'…':''}</div>
+      <div class="meta">
+        <span>${negocioTipoLabel(n.tipo)}</span>
+        <span>${(n.direccion||'Sin dirección').slice(0,30)}</span>
+      </div>
+      <div class="card-time-info">
+        <span>Actualizado: ${timeAgo(n.actualizado || n.timestamp)}</span>
+      </div>
+      ${actionButtonsHtml({contacto:n.contacto, lat:n.lat, lng:n.lng}, 'report-actions')}
+    </div>`;
+  }).join('');
+}
+
+function focusNegocio(id){
+  const n = negocios[id];
+  if(!n) return;
+  negociosMap.setCenter({lat: n.lat, lng: n.lng});
+  negociosMap.setZoom(16);
+  if(negocioMarkers[id] && negocioPopups[id]){
+    negocioInfoWindow.setContent(negocioPopups[id]);
+    negocioInfoWindow.open(negociosMap, negocioMarkers[id]);
+  }
+  openEditNegocioModal(id);
+}
+
+/* ---------------- Filtros (negocios) ---------------- */
+document.getElementById('negocio-filters').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  const filterType = chip.dataset.filter;
+  if(filterType === 'n-tipo'){
+    const alreadyActive = chip.classList.contains('active');
+    document.querySelectorAll('#negocio-filters .chip[data-filter="n-tipo"]').forEach(c=>c.classList.remove('active'));
+    if(alreadyActive){
+      currentNegocioFilterTipo = 'all';
+    }else{
+      chip.classList.add('active');
+      currentNegocioFilterTipo = chip.dataset.value;
+    }
+  }else{
+    document.querySelectorAll('#negocio-filters .chip[data-filter="n-estado"]').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    currentNegocioFilterEstado = chip.dataset.value;
+  }
+  renderNegocioList();
+});
+
+/* ---------------- Modal: nuevo/editar negocio ---------------- */
+function openNewNegocioModal(){
+  editingNegocioId = null;
+  document.getElementById('negocio-modal-title').textContent = 'Nuevo negocio';
+  document.getElementById('btn-delete-negocio').style.display = 'none';
+  clearNegocioForm();
+  pendingNegocioLatLng = null;
+  negocioPinPlacementMode = false;
+  document.getElementById('pin-hint').style.display = 'none';
+  document.getElementById('negocio-modal-overlay').classList.add('show');
+}
+
+function openEditNegocioModal(id){
+  editingNegocioId = id;
+  const n = negocios[id];
+  document.getElementById('negocio-modal-title').textContent = 'Editar negocio';
+  document.getElementById('btn-delete-negocio').style.display = 'block';
+  document.getElementById('f-negocio-nombre').value = n.nombre || '';
+  document.getElementById('f-negocio-tipo').value = n.tipo || 'restaurante';
+  document.getElementById('f-negocio-estado').value = n.estado || 'abierto';
+  document.getElementById('f-negocio-disponibilidad').value = n.disponibilidad || '';
+  document.getElementById('f-negocio-direccion').value = n.direccion || '';
+  document.getElementById('f-negocio-contacto').value = n.contacto || '';
+  document.getElementById('negocio-addr-status').textContent = '';
+  document.getElementById('negocio-addr-status').className = 'addr-status';
+  pendingNegocioLatLng = {lat: n.lat, lng: n.lng};
+  document.getElementById('negocio-modal-overlay').classList.add('show');
+}
+
+function clearNegocioForm(){
+  document.getElementById('f-negocio-nombre').value = '';
+  document.getElementById('f-negocio-tipo').value = 'restaurante';
+  document.getElementById('f-negocio-estado').value = 'abierto';
+  document.getElementById('f-negocio-disponibilidad').value = '';
+  document.getElementById('f-negocio-direccion').value = '';
+  document.getElementById('f-negocio-contacto').value = '';
+  document.getElementById('negocio-addr-status').textContent = '';
+  document.getElementById('negocio-addr-status').className = 'addr-status';
+}
+
+function closeNegocioModal(){
+  document.getElementById('negocio-modal-overlay').classList.remove('show');
+  negocioPinPlacementMode = false;
+  document.getElementById('pin-hint').style.display = 'none';
+  editingNegocioId = null;
+  pendingNegocioLatLng = null;
+}
+
+/* Igual que pickLocationOnMap()/pickClosureLocationOnMap(): oculta el modal
+   temporalmente para permitir marcar el pin con un clic en negociosMap,
+   conservando los datos ya escritos en el formulario. */
+function pickNegocioLocationOnMap(){
+  document.getElementById('negocio-modal-overlay').classList.remove('show');
+  negocioPinPlacementMode = true;
+  document.getElementById('pin-hint').style.display = 'block';
+}
+
+async function saveNegocio(){
+  if(!pendingNegocioLatLng){
+    alert("Falta ubicar el negocio: escribe la dirección arriba y presiona \"Ubicar\", o usa \"ubicar manualmente en el mapa\".");
+    return;
+  }
+  const nombre = document.getElementById('f-negocio-nombre').value.trim();
+  if(!nombre){
+    alert("Escribe el nombre del negocio.");
+    return;
+  }
+  const negocio = {
+    nombre: nombre,
+    tipo: document.getElementById('f-negocio-tipo').value,
+    estado: document.getElementById('f-negocio-estado').value,
+    disponibilidad: document.getElementById('f-negocio-disponibilidad').value.trim(),
+    direccion: document.getElementById('f-negocio-direccion').value.trim(),
+    contacto: document.getElementById('f-negocio-contacto').value.trim(),
+    lat: pendingNegocioLatLng.lat,
+    lng: pendingNegocioLatLng.lng,
+    reportadoPor: window.currentUserName || 'Anónimo',
+    timestamp: editingNegocioId ? (negocios[editingNegocioId]?.timestamp || Date.now()) : Date.now(),
+    actualizado: Date.now()
+  };
+
+  if(firebaseReady && db){
+    try{
+      if(editingNegocioId){
+        await db.collection('negocios').doc(editingNegocioId).set(negocio);
+      }else{
+        await db.collection('negocios').add(negocio);
+      }
+    }catch(e){
+      alert("Error guardando en Firebase: " + e.message);
+      return;
+    }
+  }else{
+    if(editingNegocioId){
+      upsertNegocioMarker(editingNegocioId, negocio);
+    }else{
+      const id = 'local-negocio-' + (localNegocioIdCounter++);
+      upsertNegocioMarker(id, negocio);
+    }
+  }
+  closeNegocioModal();
+}
+
+async function deleteCurrentNegocio(){
+  if(!editingNegocioId) return;
+  if(!confirm("¿Eliminar este negocio?")) return;
+  if(firebaseReady && db){
+    try{
+      await db.collection('negocios').doc(editingNegocioId).delete();
+    }catch(e){
+      alert("Error eliminando: " + e.message);
+      return;
+    }
+  }else{
+    removeNegocioMarker(editingNegocioId);
+  }
+  closeNegocioModal();
+}
+
+/* ---------------- Sincronización en tiempo real con Firestore (negocios) ---------------- */
+function listenNegocios(){
+  db.collection('negocios').onSnapshot(snapshot=>{
+    snapshot.docChanges().forEach(change=>{
+      const id = change.doc.id;
+      if(change.type === 'removed'){
+        removeNegocioMarker(id);
+      }else{
+        upsertNegocioMarker(id, change.doc.data());
+      }
+    });
+  }, err=>{
+    console.error("Error escuchando negocios:", err);
+    showConfigWarning("Error de sincronización: " + err.message);
   });
 }
 
