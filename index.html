@@ -50,6 +50,7 @@
     --negocio-farmacia:#16a34a;
     --negocio-ferreteria:#78716c;
     --negocio-panaderia:#ca8a04;
+    --negocio-cafe:#78350f;
     --negocio-servicios:#7c3aed;
     --negocio-mascotas:#0d9488;
     --negocio-otro:#64748b;
@@ -262,10 +263,11 @@
     width:340px;min-width:340px;background:var(--panel);border-left:1px solid var(--border);
     display:flex;flex-direction:column;
   }
-  #filters, #negocio-filters{
+  #filters, #negocio-filters, #negocio-filters-entrega{
     padding:10px 12px;border-bottom:1px solid var(--border);
     display:flex;gap:6px;flex-wrap:wrap;
   }
+  #negocio-filters-entrega{padding-top:0;}
   .chip{
     padding:5px 10px;border-radius:14px;border:1px solid var(--border);
     background:var(--panel-2);color:var(--text-dim);font-size:11px;cursor:pointer;user-select:none;
@@ -286,6 +288,10 @@
   .report-card .badge{
     font-size:10px;padding:2px 7px;border-radius:10px;background:var(--border);color:var(--text-dim);white-space:nowrap;
   }
+  .report-card .badge-group{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none;}
+  .report-card .badge.entrega-badge.entrega-domicilio{background:rgba(22,163,74,.15);color:#16a34a;}
+  .report-card .badge.entrega-badge.entrega-recogida{background:rgba(217,119,6,.15);color:#d97706;}
+  .report-card .badge.entrega-badge.entrega-ambos{background:rgba(37,99,235,.15);color:#2563eb;}
   .report-card .desc{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.4;}
   .report-card .meta{font-size:11px;color:var(--text-dim);margin-top:6px;display:flex;justify-content:space-between;}
   .report-card .card-time-info{
@@ -566,6 +572,11 @@
         <div class="chip" data-filter="n-estado" data-value="limitada">Capacidad limitada</div>
         <div class="chip" data-filter="n-estado" data-value="cerrado">Cerrados</div>
       </div>
+      <div id="negocio-filters-entrega">
+        <div class="chip active" data-filter="n-entrega" data-value="all">Domicilio o recogida: todos</div>
+        <div class="chip" data-filter="n-entrega" data-value="domicilio">Con domicilio</div>
+        <div class="chip" data-filter="n-entrega" data-value="recogida">Solo recogida en sitio</div>
+      </div>
       <div id="negocio-list"></div>
     </aside>
   </main>
@@ -768,6 +779,7 @@
           <option value="farmacia">Farmacia</option>
           <option value="ferreteria">Ferretería</option>
           <option value="panaderia">Panadería</option>
+          <option value="cafe">Café</option>
           <option value="servicios">Servicios</option>
           <option value="mascotas">Mascotas</option>
           <option value="otro">Otro</option>
@@ -781,6 +793,15 @@
           <option value="cerrado">Cerrado</option>
         </select>
       </div>
+    </div>
+
+    <div class="field">
+      <label>¿Domicilio o recogida en sitio?</label>
+      <select id="f-negocio-entrega">
+        <option value="domicilio">Con domicilio</option>
+        <option value="recogida">Solo recogida en sitio</option>
+        <option value="ambos">Domicilio y recogida en sitio</option>
+      </select>
     </div>
 
     <div class="field">
@@ -1031,6 +1052,7 @@ let localNegocios = [];         // usado si Firebase no está configurado
 let localNegocioIdCounter = 1;
 let currentNegocioFilterEstado = 'all';
 let currentNegocioFilterTipo = 'all';
+let currentNegocioFilterEntrega = 'all';
 
 negociosMap.addListener('click', (e)=>{
   if(!negocioPinPlacementMode) return;
@@ -1733,6 +1755,7 @@ const NEGOCIO_TIPOS = [
   {key:'farmacia', label:'Farmacia', menuLabel:'Farmacias', color:'--negocio-farmacia'},
   {key:'ferreteria', label:'Ferretería', menuLabel:'Ferreterías', color:'--negocio-ferreteria'},
   {key:'panaderia', label:'Panadería', menuLabel:'Panaderías', color:'--negocio-panaderia'},
+  {key:'cafe', label:'Café', menuLabel:'Cafés', color:'--negocio-cafe'},
   {key:'servicios', label:'Servicios', menuLabel:'Servicios', color:'--negocio-servicios'},
   {key:'mascotas', label:'Mascotas', menuLabel:'Mascotas', color:'--negocio-mascotas'},
   {key:'otro', label:'Otro', menuLabel:'Otros', color:'--negocio-otro'}
@@ -1749,6 +1772,10 @@ const NEGOCIO_ICON_PATHS = {
     <rect x="5.8" y="10.4" width="12.4" height="3.2" rx="1" fill="#ffffff"/>`,
   ferreteria: `<path d="M16.8 6.4a3.6 3.6 0 0 0-4.9 4l-6 6a1.6 1.6 0 0 0 2.3 2.3l6-6a3.6 3.6 0 0 0 4-4.9l-2.1 2.1-1.6-.5-.5-1.6z" fill="#ffffff"/>`,
   panaderia: `<path d="M6.5 14.5c0-4.7 3.3-8.3 6.5-8.3s6.5 3.6 6.5 8.3a1.9 1.9 0 0 1-1.9 1.9H8.4a1.9 1.9 0 0 1-1.9-1.9z" fill="#ffffff"/>`,
+  cafe: `<path d="M7.6 10.6h9.3v4.6a3.6 3.6 0 0 1-3.6 3.6h-2.1a3.6 3.6 0 0 1-3.6-3.6v-4.6z" fill="#ffffff"/>
+    <path d="M16.9 11.6h1.2a1.9 1.9 0 0 1 0 3.8h-1.2" fill="none" stroke="#ffffff" stroke-width="1.3"/>
+    <path d="M9.6 6.2c0 .8.9.8.9 1.6s-.9.8-.9 1.6" fill="none" stroke="#ffffff" stroke-width="1.1" stroke-linecap="round"/>
+    <path d="M12.4 6.2c0 .8.9.8.9 1.6s-.9.8-.9 1.6" fill="none" stroke="#ffffff" stroke-width="1.1" stroke-linecap="round"/>`,
   servicios: `<circle cx="13" cy="13" r="3.2" fill="none" stroke="#ffffff" stroke-width="1.6"/>
     <rect x="12.1" y="5.6" width="1.8" height="2.8" rx="0.6" fill="#ffffff"/>
     <rect x="12.1" y="17.6" width="1.8" height="2.8" rx="0.6" fill="#ffffff"/>
@@ -1773,6 +1800,9 @@ function negocioTipoLabel(tipo){
 }
 function negocioEstadoLabel(estado){
   return estado === 'abierto' ? 'Abierto' : estado === 'limitada' ? 'Capacidad limitada' : 'Cerrado';
+}
+function negocioEntregaLabel(entrega){
+  return entrega === 'recogida' ? 'Solo recogida en sitio' : entrega === 'ambos' ? 'Domicilio y recogida' : 'Con domicilio';
 }
 /* Color fijo por categoría de negocio (mismo criterio que TIPOS_AYUDA: el
    color dice de qué tipo de negocio se trata de un vistazo, sin importar su
@@ -1874,7 +1904,7 @@ function upsertNegocioMarker(id, data){
     negocioMarkers[id] = m;
   }
   const timeInfo = `<div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Actualizado: ${timeAgo(data.actualizado || data.timestamp)}</div>`;
-  negocioPopups[id] = `<div class="map-popup"><b>${data.nombre || ''}</b><br>${negocioTipoLabel(data.tipo)} · <i>${negocioEstadoLabel(data.estado)}</i><br>${data.direccion || ''}${timeInfo}${actionButtonsHtml({contacto:data.contacto, lat:data.lat, lng:data.lng}, 'popup-actions')}</div>`;
+  negocioPopups[id] = `<div class="map-popup"><b>${data.nombre || ''}</b><br>${negocioTipoLabel(data.tipo)} · <i>${negocioEstadoLabel(data.estado)}</i><br>${negocioEntregaLabel(data.entrega)}<br>${data.direccion || ''}${timeInfo}${actionButtonsHtml({contacto:data.contacto, lat:data.lat, lng:data.lng}, 'popup-actions')}</div>`;
   applyNegocioMarkerVisibility();
   renderNegocioList();
   updateNegocioStats();
@@ -1918,6 +1948,11 @@ function renderNegocioList(){
   if(currentNegocioFilterTipo !== 'all'){
     entries = entries.filter(([id,n]) => n.tipo === currentNegocioFilterTipo);
   }
+  if(currentNegocioFilterEntrega !== 'all'){
+    // 'ambos' cuenta para los dos filtros: un negocio con domicilio Y recogida
+    // debe aparecer tanto al filtrar "con domicilio" como "solo recogida".
+    entries = entries.filter(([id,n]) => (n.entrega || 'domicilio') === currentNegocioFilterEntrega || (n.entrega === 'ambos'));
+  }
   if(currentNegocioSearchQuery){
     entries = entries.filter(([id,n]) => negocioMatchesSearch(n, currentNegocioSearchQuery));
   }
@@ -1935,7 +1970,10 @@ function renderNegocioList(){
     return `<div class="report-card" style="border-left-color:${color}" onclick="focusNegocio('${id}')">
       <div class="top">
         <div class="cat">${n.nombre || 'Sin nombre'}</div>
-        <div class="badge">${negocioEstadoLabel(n.estado)}</div>
+        <div class="badge-group">
+          <div class="badge">${negocioEstadoLabel(n.estado)}</div>
+          <div class="badge entrega-badge entrega-${n.entrega || 'domicilio'}">${negocioEntregaLabel(n.entrega)}</div>
+        </div>
       </div>
       <div class="desc">${(n.disponibilidad||'').slice(0,120)}${(n.disponibilidad||'').length>120?'…':''}</div>
       <div class="meta">
@@ -1971,6 +2009,14 @@ document.getElementById('negocio-filters').addEventListener('click', (e)=>{
   currentNegocioFilterEstado = chip.dataset.value;
   renderNegocioList();
 });
+document.getElementById('negocio-filters-entrega').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  document.querySelectorAll('#negocio-filters-entrega .chip[data-filter="n-entrega"]').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  currentNegocioFilterEntrega = chip.dataset.value;
+  renderNegocioList();
+});
 
 /* ---------------- Menú de categorías de negocios (arriba, igual que las
    pestañas de tipo de ayuda) ---------------- */
@@ -1989,7 +2035,7 @@ function normalizeSearchText(s){
 let currentNegocioSearchQuery = '';
 function negocioMatchesSearch(n, query){
   if(!query) return true;
-  const haystack = normalizeSearchText([n.nombre, negocioTipoLabel(n.tipo), n.disponibilidad, n.direccion].filter(Boolean).join(' '));
+  const haystack = normalizeSearchText([n.nombre, negocioTipoLabel(n.tipo), n.disponibilidad, n.direccion, negocioEntregaLabel(n.entrega)].filter(Boolean).join(' '));
   return haystack.includes(query);
 }
 function onNegocioSearchInput(){
@@ -2018,6 +2064,7 @@ function openEditNegocioModal(id){
   document.getElementById('f-negocio-nombre').value = n.nombre || '';
   document.getElementById('f-negocio-tipo').value = n.tipo || 'restaurante';
   document.getElementById('f-negocio-estado').value = n.estado || 'abierto';
+  document.getElementById('f-negocio-entrega').value = n.entrega || 'domicilio';
   document.getElementById('f-negocio-disponibilidad').value = n.disponibilidad || '';
   document.getElementById('f-negocio-direccion').value = n.direccion || '';
   document.getElementById('f-negocio-contacto').value = n.contacto || '';
@@ -2031,6 +2078,7 @@ function clearNegocioForm(){
   document.getElementById('f-negocio-nombre').value = '';
   document.getElementById('f-negocio-tipo').value = 'restaurante';
   document.getElementById('f-negocio-estado').value = 'abierto';
+  document.getElementById('f-negocio-entrega').value = 'domicilio';
   document.getElementById('f-negocio-disponibilidad').value = '';
   document.getElementById('f-negocio-direccion').value = '';
   document.getElementById('f-negocio-contacto').value = '';
@@ -2069,6 +2117,7 @@ async function saveNegocio(){
     nombre: nombre,
     tipo: document.getElementById('f-negocio-tipo').value,
     estado: document.getElementById('f-negocio-estado').value,
+    entrega: document.getElementById('f-negocio-entrega').value,
     disponibilidad: document.getElementById('f-negocio-disponibilidad').value.trim(),
     direccion: document.getElementById('f-negocio-direccion').value.trim(),
     contacto: document.getElementById('f-negocio-contacto').value.trim(),
