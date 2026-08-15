@@ -45,6 +45,12 @@
     --socorristas:#ea580c;
     --dotacion-rescatistas:#92400e;
     --cierre:#b91c1c;
+    --negocio-restaurante:#dc2626;
+    --negocio-tienda:#2563eb;
+    --negocio-farmacia:#16a34a;
+    --negocio-ferreteria:#78716c;
+    --negocio-panaderia:#ca8a04;
+    --negocio-otro:#64748b;
     --radius:10px;
   }
   *{box-sizing:border-box;}
@@ -532,12 +538,12 @@
         <div class="chip" data-filter="n-estado" data-value="abierto">Abiertos</div>
         <div class="chip" data-filter="n-estado" data-value="limitada">Capacidad limitada</div>
         <div class="chip" data-filter="n-estado" data-value="cerrado">Cerrados</div>
-        <div class="chip" data-filter="n-tipo" data-value="restaurante">Restaurantes</div>
-        <div class="chip" data-filter="n-tipo" data-value="tienda">Tiendas</div>
-        <div class="chip" data-filter="n-tipo" data-value="farmacia">Farmacias</div>
-        <div class="chip" data-filter="n-tipo" data-value="ferreteria">Ferreterías</div>
-        <div class="chip" data-filter="n-tipo" data-value="panaderia">Panaderías</div>
-        <div class="chip" data-filter="n-tipo" data-value="otro">Otros</div>
+        <div class="chip" data-filter="n-tipo" data-value="restaurante"><span class="dot" style="background:var(--negocio-restaurante)"></span> Restaurantes</div>
+        <div class="chip" data-filter="n-tipo" data-value="tienda"><span class="dot" style="background:var(--negocio-tienda)"></span> Tiendas</div>
+        <div class="chip" data-filter="n-tipo" data-value="farmacia"><span class="dot" style="background:var(--negocio-farmacia)"></span> Farmacias</div>
+        <div class="chip" data-filter="n-tipo" data-value="ferreteria"><span class="dot" style="background:var(--negocio-ferreteria)"></span> Ferreterías</div>
+        <div class="chip" data-filter="n-tipo" data-value="panaderia"><span class="dot" style="background:var(--negocio-panaderia)"></span> Panaderías</div>
+        <div class="chip" data-filter="n-tipo" data-value="otro"><span class="dot" style="background:var(--negocio-otro)"></span> Otros</div>
       </div>
       <div id="negocio-list"></div>
     </aside>
@@ -1699,12 +1705,12 @@ function listenClosures(){
 
 /* ---------------- Negocios que atienden (página aparte, mismo Firestore) ---------------- */
 const NEGOCIO_TIPOS = [
-  {key:'restaurante', label:'Restaurante'},
-  {key:'tienda', label:'Tienda / Mercado'},
-  {key:'farmacia', label:'Farmacia'},
-  {key:'ferreteria', label:'Ferretería'},
-  {key:'panaderia', label:'Panadería'},
-  {key:'otro', label:'Otro'}
+  {key:'restaurante', label:'Restaurante', color:'--negocio-restaurante'},
+  {key:'tienda', label:'Tienda / Mercado', color:'--negocio-tienda'},
+  {key:'farmacia', label:'Farmacia', color:'--negocio-farmacia'},
+  {key:'ferreteria', label:'Ferretería', color:'--negocio-ferreteria'},
+  {key:'panaderia', label:'Panadería', color:'--negocio-panaderia'},
+  {key:'otro', label:'Otro', color:'--negocio-otro'}
 ];
 const NEGOCIO_ICON_PATHS = {
   restaurante: `<rect x="9" y="5.5" width="1.3" height="7" rx="0.6" fill="#ffffff"/>
@@ -1729,17 +1735,41 @@ function negocioTipoLabel(tipo){
 function negocioEstadoLabel(estado){
   return estado === 'abierto' ? 'Abierto' : estado === 'limitada' ? 'Capacidad limitada' : 'Cerrado';
 }
+/* Color fijo por categoría de negocio (mismo criterio que TIPOS_AYUDA: el
+   color dice de qué tipo de negocio se trata de un vistazo, sin importar su
+   disponibilidad). La disponibilidad (abierto/limitada/cerrado) se sigue
+   viendo con una insignia de color en la esquina del marcador -- mismo
+   patrón que roleBadge() para provee/necesita en el sistema de ayuda. */
+function negocioColorForTipo(tipo){
+  const found = NEGOCIO_TIPOS.find(t=>t.key===tipo);
+  return cssVar(found ? found.color : '--negocio-otro');
+}
 function negocioColorForEstado(estado){
   if(estado === 'abierto') return cssVar('--green');
   if(estado === 'limitada') return cssVar('--orange');
   return cssVar('--text-dim');
 }
+function negocioEstadoBadge(estado){
+  const bg = negocioColorForEstado(estado);
+  let glyph;
+  if(estado === 'abierto'){
+    glyph = `<path d="M17.8 19.9l1.2 1.2 2.5-2.7" fill="none" stroke="#ffffff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }else if(estado === 'limitada'){
+    glyph = `<rect x="17.6" y="19.1" width="4.2" height="1.2" rx="0.6" fill="#ffffff"/>`;
+  }else{
+    glyph = `<rect x="17.9" y="19.1" width="3.6" height="1.2" rx="0.6" fill="#ffffff" transform="rotate(45 19.7 19.7)"/>
+      <rect x="17.9" y="19.1" width="3.6" height="1.2" rx="0.6" fill="#ffffff" transform="rotate(-45 19.7 19.7)"/>`;
+  }
+  return `<circle cx="19.7" cy="19.7" r="4.7" fill="${bg}" stroke="#ffffff" stroke-width="1"/>${glyph}`;
+}
 function makeNegocioIcon(estado, tipo){
-  const color = negocioColorForEstado(estado);
+  const color = negocioColorForTipo(tipo);
   const glyph = NEGOCIO_ICON_PATHS[tipo] || NEGOCIO_ICON_PATHS.otro;
+  const badge = negocioEstadoBadge(estado);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">
     <circle cx="13" cy="13" r="11" fill="${color}" stroke="#1a1a1a" stroke-width="2"/>
     ${glyph}
+    ${badge}
   </svg>`;
   return {
     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
@@ -1805,7 +1835,7 @@ function renderNegocioList(){
   }
 
   list.innerHTML = entries.map(([id, n])=>{
-    const color = negocioColorForEstado(n.estado);
+    const color = negocioColorForTipo(n.tipo);
     return `<div class="report-card" style="border-left-color:${color}" onclick="focusNegocio('${id}')">
       <div class="top">
         <div class="cat">${n.nombre || 'Sin nombre'}</div>
